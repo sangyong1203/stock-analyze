@@ -30,9 +30,9 @@
 - 기존 파일이 있다면 최대한 유지하고, 불필요한 구조 변경을 하지 않는다.
 - 삭제, 대규모 구조 변경, 기술 스택 변경은 하지 않는다.
 - 한 번에 모든 기능을 무리하게 만들지 말고 단계별로 진행한다.
-- 작업 전 `CODEX_TODO.md`를 작성한다.
-- 작업 중 `CODEX_PROGRESS.md`를 계속 갱신한다.
-- 작업 완료 후 `DEVELOPMENT_REPORT.md`를 작성한다.
+- 작업 전 `docs/CODEX_TODO.md`를 작성한다.
+- 작업 중 `docs/CODEX_PROGRESS.md`는 체크포인트 기준으로 갱신한다.
+- 작업 완료 후 `docs/DEVELOPMENT_REPORT.md`를 작성한다.
 - 모든 작업 완료 후 사용자에게 “모든 지시 내용 작업 완료”라고 명확히 보고한다.
 
 ---
@@ -79,7 +79,7 @@ DART 공시/기업정보 전용 저장 테이블은 1차 MVP DB에 포함하지 
 
 ## 3. 먼저 생성해야 할 문서
 
-프로젝트 루트 또는 `docs/` 폴더에 아래 문서를 생성한다.
+프로젝트의 `docs/` 폴더에 아래 문서를 생성한다.
 
 ```text
 docs/CODEX_TODO.md
@@ -220,9 +220,25 @@ docs/DEVELOPMENT_REPORT.md
 
 ## 5. CODEX_PROGRESS.md 작성 지시
 
-개발 중에는 `docs/CODEX_PROGRESS.md`를 계속 갱신한다.
+`docs/CODEX_PROGRESS.md`는 실시간 로그 파일이 아니라 작업 체크포인트 문서다.
 
-다음 형식을 사용한다.
+매 파일 수정마다 갱신하지 않는다.
+
+다음 조건에서만 갱신한다.
+
+- 새로운 Phase를 시작할 때
+- Phase 하나를 완료했을 때
+- 주요 작업 묶음을 완료했을 때
+- DB 모델, 마이그레이션, API 골격, Frontend 메뉴 구조처럼 중요한 산출물이 생겼을 때
+- 실행 확인, 테스트, 마이그레이션 결과가 나왔을 때
+- 막힌 항목이 생겼을 때
+- 확인 필요 항목이 생겼을 때
+- 작업을 중단하기 전
+- 전체 작업 완료 직전
+
+작은 코드 수정, import 정리, 단순 오타 수정, 스타일 수정처럼 미세한 변경마다 갱신하지 않는다.
+
+갱신 시에는 다음 형식을 사용한다.
 
 ```markdown
 # CODEX PROGRESS
@@ -343,7 +359,6 @@ docs/DEVELOPMENT_REPORT.md
 ```bash
 명령어 작성
 ```
-````
 
 ### Frontend
 
@@ -393,7 +408,6 @@ docs/DEVELOPMENT_REPORT.md
 최종 메시지:
 
 “요청받은 기준 문서 기반 작업을 완료했습니다. DEVELOPMENT_REPORT.md를 확인해 주세요.”
-
 ````
 
 ---
@@ -436,7 +450,7 @@ backend/
       naver/
       gmail/
       openai/
-````
+```
 
 도메인별 기본 파일 구조:
 
@@ -515,7 +529,7 @@ pages/main/{menu}/
 
 ## 9. DB 구현 기준
 
-`MVP_DB_SCHEMA_v1.2.md`에 정의된 27개 테이블을 구현한다.
+`docs/MVP_DB_SCHEMA_v1.2.md`에 정의된 27개 테이블을 구현한다.
 
 테이블 목록:
 
@@ -594,6 +608,7 @@ tag_links
 - 거래 API
 - 포트폴리오 API
 - 알림 API
+- 차트 데이터 API
 - 메모/태그 API
 - 설정 API
 
@@ -652,7 +667,7 @@ DART 공시/기업정보 전용 저장 테이블은 1차 MVP DB에 포함하지 
 - 현재 구현 여부: 보류
 ```
 
-확인 필요 항목은 `CODEX_PROGRESS.md`와 `DEVELOPMENT_REPORT.md`에 모두 기록한다.
+확인 필요 항목은 `docs/CODEX_PROGRESS.md`와 `docs/DEVELOPMENT_REPORT.md`에 모두 기록한다.
 
 ---
 
@@ -660,8 +675,8 @@ DART 공시/기업정보 전용 저장 테이블은 1차 MVP DB에 포함하지 
 
 작업 완료 조건은 다음과 같다.
 
-- `CODEX_TODO.md` 작성 완료
-- `CODEX_PROGRESS.md` 갱신 완료
+- `docs/CODEX_TODO.md` 작성 완료
+- `docs/CODEX_PROGRESS.md` 갱신 완료
 - SQLAlchemy 모델 생성 완료
 - Alembic 마이그레이션 생성 완료
 - SQLite DB 생성 확인
@@ -669,7 +684,7 @@ DART 공시/기업정보 전용 저장 테이블은 1차 MVP DB에 포함하지 
 - Backend API 골격 생성
 - Frontend 메뉴/화면 골격 생성
 - 실행 방법 문서화
-- `DEVELOPMENT_REPORT.md` 작성 완료
+- `docs/DEVELOPMENT_REPORT.md` 작성 완료
 - 완료/미완료/확인 필요 항목 정리 완료
 
 작업이 끝나면 사용자에게 다음과 같이 보고한다.
