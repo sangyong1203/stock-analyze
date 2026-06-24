@@ -154,6 +154,8 @@ python seeds/seed_defaults.py
 - 중복 테스트: 동일 기사 재수집 시 신규 row 없이 `duplicate_count` 증가 확인
 - GPT API 테스트: `/api/news/gpt/targets`, `/api/news/gpt/status`, summary dry-run, filter dry-run 200 응답 확인
 - GPT API key 오류 테스트: dry_run=false에서 `OPENAI_API_KEY is not configured` 400 응답 확인
+- OpenAI 환경변수 설정 후 실제 GPT 요약 테스트: summary limit 1 성공, `gpt_summary_status = done` 저장 확인
+- OpenAI 실제 GPT 재필터 테스트: filter limit 1 호출은 OpenAI `insufficient_quota` 오류로 실패 처리 확인
 - GPT 검수 API 테스트: `/api/news/gpt/review` 200 응답, `/api/news/gpt/review/{news_id}` PATCH 성공
 - 뉴스 알림 후보 API 테스트: `/api/news/alerts/candidates/recalculate`, `/api/news/alerts/candidates`, `/api/news/alerts/summary` 성공
 - 뉴스 알림 후보 재계산 결과: processed 14, alert_target 2
@@ -162,9 +164,9 @@ python seeds/seed_defaults.py
 
 ## 10. 미완료 항목
 
-- 항목: OpenAI 요약/재필터링 실제 호출
-- 이유: 현재 환경에 OPENAI_API_KEY와 모델명이 없다.
-- 다음 작업 제안: `.env` 설정 후 요약 5건, 재필터 5건 소량 실행 검증
+- 항목: OpenAI 재필터링 실제 호출
+- 이유: API key와 모델명은 정상 로드됐고 요약 limit 1은 성공했지만, 재필터 limit 1은 OpenAI quota 부족으로 실패했다.
+- 다음 작업 제안: OpenAI billing/quota 확인 후 재필터 limit 1부터 재실행
 
 - 항목: Gmail SMTP 실제 발송
 - 이유: 이번 작업 범위는 알림 후보 산출까지만 포함한다.
@@ -184,9 +186,9 @@ python seeds/seed_defaults.py
 - 확인이 필요한 이유: 현재 parser는 네이버 금융 뉴스 링크 패턴 기반이다.
 - 제안: 현재 articleSubject/articleSummary 기준으로 보정했으며 운영 수집 중 누락 패턴이 확인되면 parser 규칙을 추가 보완
 
-- 항목: OpenAI 모델명 확정
-- 확인이 필요한 이유: 작업 지시 기준 모델명은 코드에 고정하지 않고 환경변수로 받는다.
-- 제안: `OPENAI_NEWS_SUMMARY_MODEL`, `OPENAI_NEWS_FILTER_MODEL` 값을 확정해 `.env`에 설정
+- 항목: OpenAI quota/billing
+- 확인이 필요한 이유: 실제 재필터 호출에서 `insufficient_quota`가 발생했다.
+- 제안: OpenAI 프로젝트 billing/quota를 확인하고 quota 복구 후 재검증
 
 - 항목: 알림 후보 기준 튜닝
 - 확인이 필요한 이유: 현재 기준은 문서 기준의 1차 산출이며 실제 운영에서는 과다/과소 알림 여부를 확인해야 한다.
@@ -194,8 +196,8 @@ python seeds/seed_defaults.py
 
 ## 12. 다음 단계 제안
 
-- 다음 단계 1: OpenAI 환경변수 설정 후 GPT 실제 호출 소량 검증
-- 다음 단계 2: GPT 필터 결과 수동 검수 및 prompt 보정
+- 다음 단계 1: OpenAI quota/billing 확인 후 GPT 재필터 limit 1 재검증
+- 다음 단계 2: GPT 요약 결과 5건 확장 검증 및 필터 결과 수동 검수
 - 다음 단계 3: Gmail SMTP 발송 및 alert_histories 기록 구현
 - 다음 단계 4: KRX 가격 데이터 수집 구조 구현
 

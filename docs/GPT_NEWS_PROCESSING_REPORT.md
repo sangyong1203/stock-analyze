@@ -68,23 +68,18 @@
 - summary dry-run: 200 응답
 - filter dry-run: 200 응답
 - API key 없음: dry_run=false 요청 시 `OPENAI_API_KEY is not configured` 400 응답
+- OpenAI 환경변수 설정 후 실제 요약 실행: `OPENAI_API_KEY`, `OPENAI_NEWS_SUMMARY_MODEL`, `OPENAI_NEWS_FILTER_MODEL` 로드 확인, summary limit 1 성공
+- 실제 요약 저장 확인: `gpt_summary`, `gpt_summary_model = gpt-5.4-mini`, `gpt_summary_status = done`, `gpt_summary_at` 저장
+- 실제 재필터 실행: filter limit 1 요청은 OpenAI API quota 부족으로 실패했고 `gpt_filter_result = failed`, `gpt_filter_reason`에 `insufficient_quota` 오류 저장
 - GPT 검수 API: `/api/news/gpt/review` 200 응답, PATCH 수동 보정 200 응답
 - Frontend build: `npm run build` 성공
 - Regression: `/health`, `/api/auth/status`, `/api/settings`, `/api/stocks`, `/api/collection/stocks/summary`, `/api/news`, `/api/news/summary` 200 응답
 
 ## 8. 확인 필요 항목
 
-- 항목: OpenAI 모델명 확정
-- 이유: 작업 지시 기준 모델명은 코드에 고정하지 않고 환경변수로 받는다.
-- 제안: `.env`에 `OPENAI_NEWS_SUMMARY_MODEL`, `OPENAI_NEWS_FILTER_MODEL` 값을 확정해 입력한다.
-
-- 항목: OpenAI API key 설정
-- 이유: 현재 환경에는 `OPENAI_API_KEY`가 없어 실제 GPT 호출은 실행하지 않았다.
-- 제안: key 설정 후 dry-run=false로 소량 실행 검증한다.
-
-- 항목: OpenAI 모델명 설정
-- 이유: 현재 환경에는 `OPENAI_NEWS_SUMMARY_MODEL`, `OPENAI_NEWS_FILTER_MODEL`도 설정되어 있지 않다.
-- 제안: 모델명을 확정한 뒤 `.env`에 입력한다.
+- 항목: OpenAI quota/billing
+- 이유: API key와 모델명은 정상 로드되고 요약 호출은 성공했지만, 재필터 호출에서 `insufficient_quota` 오류가 발생했다.
+- 제안: OpenAI 프로젝트 billing/quota를 확인한 뒤 filter limit 1부터 재실행한다.
 
 - 항목: GPT 필터 결과 품질 기준
 - 이유: 재필터링 분류값 구조는 구현했지만 운영 품질 기준은 실제 결과를 보고 보정해야 한다.
@@ -92,6 +87,7 @@
 
 ## 9. 다음 단계 제안
 
-- OpenAI 환경변수 설정 후 실제 GPT 요약 5건 검증
+- OpenAI quota/billing 확인 후 GPT 재필터링 limit 1 재검증
+- GPT 요약 결과 5건 확장 검증
 - GPT 재필터링 결과 수동 검수 및 prompt 보정
 - 뉴스 알림 후보 발송 구조 구현

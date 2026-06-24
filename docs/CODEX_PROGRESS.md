@@ -57,6 +57,12 @@
 - [x] OpenAI 환경변수 점검 보완
   - 설명: dry_run=false 실행 시 API key/model 누락을 명확한 400 오류로 반환하고 dry_run=true는 key 없이도 대상 확인 가능하게 유지했다.
   - 관련 파일: backend/app/domains/news/service.py
+- [x] OpenAI 실제 요약 소량 검증
+  - 설명: `OPENAI_API_KEY`, `OPENAI_NEWS_SUMMARY_MODEL`, `OPENAI_NEWS_FILTER_MODEL` 로드 확인 후 summary limit 1 실제 호출에 성공했고 `gpt_summary_status = done` 저장을 확인했다.
+  - 관련 파일: backend/.env, docs/GPT_NEWS_PROCESSING_REPORT.md
+- [x] OpenAI 실제 재필터 소량 검증
+  - 설명: filter limit 1 실제 호출은 OpenAI `insufficient_quota` 오류로 실패했으며 실패 상태가 저장되는 것을 확인했다.
+  - 관련 파일: docs/GPT_NEWS_PROCESSING_REPORT.md
 - [x] GPT 결과 검수 API 구현
   - 설명: GPT 검수 목록 조회와 gpt_filter_result, gpt_filter_reason, is_alert_target, filter_status 수동 보정 API를 구현했다.
   - 관련 파일: backend/app/domains/news/router.py, backend/app/domains/news/service.py, backend/app/domains/news/schemas.py
@@ -79,7 +85,7 @@
 ## 남은 작업
 
 - [ ] 네이버 금융 실제 운영 수집 안정성 점검
-- [ ] OpenAI API key/model 설정 후 실제 GPT 호출 검증
+- [ ] OpenAI quota/billing 확인 후 GPT 재필터 limit 1 재검증
 - [ ] Gmail SMTP 발송 및 alert_histories 기록 구현
 - [ ] KRX 가격 데이터 수집 구조 구현
 
@@ -143,9 +149,9 @@
 - 이유: 현재 parser는 네이버 금융 뉴스 목록 HTML의 링크 패턴을 기준으로 구현되어 있어 운영 중 HTML 구조 변경 시 보완이 필요하다.
 - 제안: 실제 운영 수집 로그를 보고 필요한 selector/파싱 규칙을 추가한다.
 
-- 항목: OpenAI 요약/재필터링
-- 이유: 현재 환경에 OPENAI_API_KEY와 모델명이 설정되지 않아 실제 호출은 검증하지 못했다.
-- 제안: `.env`에 OPENAI_API_KEY, OPENAI_NEWS_SUMMARY_MODEL, OPENAI_NEWS_FILTER_MODEL 설정 후 소량 실행 검증한다.
+- 항목: OpenAI quota/billing
+- 이유: API key와 모델명은 정상 로드됐고 요약 limit 1은 성공했지만 재필터 limit 1에서 `insufficient_quota` 오류가 발생했다.
+- 제안: OpenAI billing/quota 확인 후 재필터 limit 1부터 재실행한다.
 
 - 항목: Gmail SMTP 발송
 - 이유: CODEX_TASK_1.5 범위는 알림 후보 산출까지만 포함한다.
