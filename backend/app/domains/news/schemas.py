@@ -196,3 +196,58 @@ class AlertCandidateSummary(BaseModel):
     important_count: int
     price_impact_count: int
     high_importance_count: int
+
+
+class AlertSendRequest(BaseModel):
+    limit: int = Field(default=20, ge=1, le=100)
+    force: bool = False
+
+
+class AlertSendItem(BaseModel):
+    news_id: int
+    stock_id: int | None = None
+    title: str
+    recipient_email: str | None = None
+    status: str
+    reason: str | None = None
+
+
+class AlertSendResult(BaseModel):
+    candidate_count: int
+    sendable_count: int
+    sent_count: int = 0
+    failed_count: int = 0
+    skipped_count: int
+    skipped_reasons: dict[str, int]
+    daily_sent_count: int
+    hourly_sent_count: int
+    would_send_items: list[AlertSendItem]
+    sent_items: list[AlertSendItem] = []
+    failed_items: list[AlertSendItem] = []
+
+
+class AlertHistoryRead(BaseModel):
+    id: int
+    news_id: int | None = None
+    stock_id: int | None = None
+    price_alert_id: int | None = None
+    alert_type: str
+    recipient_email: str | None = None
+    title: str
+    message: str | None = None
+    link_url: str | None = None
+    status: str
+    sent_at: datetime | None = None
+    error_message: str | None = None
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class AlertHistorySummary(BaseModel):
+    total_count: int
+    sent_count: int
+    failed_count: int
+    skipped_count: int
+    today_sent_count: int
+    hourly_sent_count: int

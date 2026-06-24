@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from hashlib import sha1
 import re
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
@@ -7,12 +7,17 @@ from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
-from app.db.models import News, NewsCollectJob, NewsCollectJobItem, NewsStockLink, Stock
+from app.db.models import AlertHistory, News, NewsCollectJob, NewsCollectJobItem, NewsStockLink, Stock
 from app.domains.news import repository
 from app.domains.news.schemas import (
     AlertCandidateItem,
     AlertCandidateRecalculateResult,
     AlertCandidateSummary,
+    AlertHistoryRead,
+    AlertHistorySummary,
+    AlertSendItem,
+    AlertSendRequest,
+    AlertSendResult,
     GptRunItem,
     GptRunRequest,
     GptRunResult,
@@ -23,6 +28,7 @@ from app.domains.news.schemas import (
     NewsReviewUpdate,
     NewsSummary,
 )
+from app.external.gmail import GmailMessage, GmailSmtpClient
 from app.external.openai import OpenAiNewsClient
 from app.external.naver import NaverFinanceNewsClient
 from app.external.naver.types import NaverNewsItem
@@ -697,4 +703,208 @@ def get_alert_summary(db: Session) -> AlertCandidateSummary:
         important_count=important,
         price_impact_count=price_impact,
         high_importance_count=high_importance,
+    )
+
+
+def _validate_gmail_settings() -> tuple[str, str, str]:
+    username = settings.gmail_smtp_username
+    password = settings.gmail_smtp_app_password
+    recipient = settings.alert_recipient_email
+    missing = []
+    if not settings.gmail_smtp_host:
+        missing.append("GMAIL_SMTP_HOST")
+    if not settings.gmail_smtp_port:
+        missing.append("GMAIL_SMTP_PORT")
+    if not username:
+        missing.append("GMAIL_SMTP_USERNAME")
+    if not password:
+        missing.append("GMAIL_SMTP_APP_PASSWORD")
+    if not recipient:
+        missing.append("ALERT_RECIPIENT_EMAIL")
+    if missing:
+        raise HTTPException(status_code=400, detail=f"Missing Gmail SMTP settings: {', '.join(missing)}")
+    return username, password, recipient
+
+
+def _send_units(news: News) -> list[tuple[int | None, str | None]]:
+    if news.stock_links:
+        return [(link.stock_id, link.stock_name) for link in news.stock_links]
+    return [(None, None)]
+
+
+def _skip_reason(db: Session, news: News, stock_id: int | None, force: bool) -> str | None:
+    if repository.get_sent_alert_history(db, news.id, stock_id):
+        return "already_sent"
+    if not force and repository.get_failed_alert_history(db, news.id, stock_id):
+        return "failed_exists"
+    return None
+
+
+def _alert_subject(news: News, stock_name: str | None) -> str:
+    prefix = f"[주식뉴스 알림]{f' {stock_name}' if stock_name else ''}"
+    return f"{prefix} {news.title}"[:255]
+
+
+def _alert_body(news: News, stock_name: str | None) -> str:
+    related_stocks = ", ".join(_related_stock_names(news)) or "-"
+    return "\n".join([
+        f"뉴스 제목: {news.title}",
+        f"발행시각: {news.published_at or '-'}",
+        f"출처: {news.source or '-'}",
+        f"관련 종목: {stock_name or related_stocks}",
+        f"중요도 점수: {news.importance_score}",
+        f"중복/출처 수: {news.duplicate_count}/{news.source_count}",
+        f"GPT 요약: {news.gpt_summary or '-'}",
+        f"GPT 필터 결과: {news.gpt_filter_result or '-'}",
+        f"GPT 필터 사유: {news.gpt_filter_reason or '-'}",
+        f"원문 URL: {news.url}",
+    ])
+
+
+def _record_alert_history(
+    db: Session,
+    news: News,
+    stock_id: int | None,
+    recipient: str | None,
+    title: str,
+    message: str,
+    status: str,
+    error_message: str | None = None,
+) -> AlertHistory:
+    history = AlertHistory(
+        news_id=news.id,
+        stock_id=stock_id,
+        alert_type="news",
+        recipient_email=recipient,
+        title=title[:255],
+        message=message,
+        link_url=news.url[:500] if news.url else None,
+        status=status,
+        sent_at=datetime.utcnow() if status == "sent" else None,
+        error_message=error_message,
+    )
+    db.add(history)
+    db.flush()
+    return history
+
+
+def _send_plan(db: Session, payload: AlertSendRequest) -> tuple[list[tuple[News, int | None, str | None]], dict[str, int], int, int, int]:
+    alert_setting = repository.get_alert_setting(db)
+    if alert_setting is None:
+        raise HTTPException(status_code=400, detail="alert_settings is not configured")
+
+    now = datetime.utcnow()
+    daily_sent = repository.count_sent_alerts_since(db, now.replace(hour=0, minute=0, second=0, microsecond=0))
+    hourly_sent = repository.count_sent_alerts_since(db, now - timedelta(hours=1))
+    skipped_reasons: dict[str, int] = {}
+    sendable: list[tuple[News, int | None, str | None]] = []
+    candidate_news = repository.list_alert_send_candidates(db, payload.limit)
+    candidate_count = 0
+
+    def skip(reason: str) -> None:
+        skipped_reasons[reason] = skipped_reasons.get(reason, 0) + 1
+
+    for news in candidate_news:
+        for stock_id, stock_name in _send_units(news):
+            candidate_count += 1
+            if not alert_setting.enabled:
+                skip("alert_disabled")
+                continue
+            if not alert_setting.news_alert_enabled:
+                skip("news_alert_disabled")
+                continue
+            if not alert_setting.send_email:
+                skip("email_disabled")
+                continue
+            if daily_sent + len(sendable) >= alert_setting.max_daily_alerts:
+                skip("daily_limit")
+                continue
+            if hourly_sent + len(sendable) >= alert_setting.max_hourly_alerts:
+                skip("hourly_limit")
+                continue
+            reason = _skip_reason(db, news, stock_id, payload.force)
+            if reason:
+                skip(reason)
+                continue
+            if len(sendable) >= payload.limit:
+                skip("request_limit")
+                continue
+            sendable.append((news, stock_id, stock_name))
+
+    return sendable, skipped_reasons, candidate_count, daily_sent, hourly_sent
+
+
+def dry_run_send_alerts(db: Session, payload: AlertSendRequest) -> AlertSendResult:
+    sendable, skipped_reasons, candidate_count, daily_sent, hourly_sent = _send_plan(db, payload)
+    items = [
+        AlertSendItem(
+            news_id=news.id,
+            stock_id=stock_id,
+            title=news.title,
+            recipient_email=settings.alert_recipient_email or None,
+            status="would_send",
+        )
+        for news, stock_id, _stock_name in sendable
+    ]
+    return AlertSendResult(
+        candidate_count=candidate_count,
+        sendable_count=len(sendable),
+        skipped_count=sum(skipped_reasons.values()),
+        skipped_reasons=skipped_reasons,
+        daily_sent_count=daily_sent,
+        hourly_sent_count=hourly_sent,
+        would_send_items=items,
+    )
+
+
+def send_alerts(db: Session, payload: AlertSendRequest) -> AlertSendResult:
+    username, password, recipient = _validate_gmail_settings()
+    sendable, skipped_reasons, candidate_count, daily_sent, hourly_sent = _send_plan(db, payload)
+    client = GmailSmtpClient(
+        host=settings.gmail_smtp_host,
+        port=settings.gmail_smtp_port,
+        username=username,
+        app_password=password,
+    )
+    sent_items: list[AlertSendItem] = []
+    failed_items: list[AlertSendItem] = []
+    for news, stock_id, stock_name in sendable:
+        subject = _alert_subject(news, stock_name)
+        body = _alert_body(news, stock_name)
+        try:
+            client.send(GmailMessage(recipient=recipient, subject=subject, body=body))
+            _record_alert_history(db, news, stock_id, recipient, subject, body, "sent")
+            sent_items.append(AlertSendItem(news_id=news.id, stock_id=stock_id, title=news.title, recipient_email=recipient, status="sent"))
+        except Exception as exc:  # noqa: BLE001 - SMTP failure must be persisted.
+            _record_alert_history(db, news, stock_id, recipient, subject, body, "failed", str(exc))
+            failed_items.append(AlertSendItem(news_id=news.id, stock_id=stock_id, title=news.title, recipient_email=recipient, status="failed", reason=str(exc)))
+    db.commit()
+    return AlertSendResult(
+        candidate_count=candidate_count,
+        sendable_count=len(sendable),
+        sent_count=len(sent_items),
+        failed_count=len(failed_items),
+        skipped_count=sum(skipped_reasons.values()),
+        skipped_reasons=skipped_reasons,
+        daily_sent_count=daily_sent,
+        hourly_sent_count=hourly_sent,
+        would_send_items=[],
+        sent_items=sent_items,
+        failed_items=failed_items,
+    )
+
+
+def get_alert_histories(db: Session, status: str | None = None) -> list[AlertHistoryRead]:
+    return repository.list_alert_histories(db, status=status)
+
+
+def get_alert_histories_summary(db: Session) -> AlertHistorySummary:
+    total, sent, failed, skipped, today_sent, hourly_sent = repository.alert_history_summary_counts(db)
+    return AlertHistorySummary(
+        total_count=total,
+        sent_count=sent,
+        failed_count=failed,
+        skipped_count=skipped,
+        today_sent_count=today_sent,
+        hourly_sent_count=hourly_sent,
     )

@@ -11,8 +11,9 @@ class Settings(BaseSettings):
     google_allowed_email: str = ""
     gmail_smtp_host: str = "smtp.gmail.com"
     gmail_smtp_port: int = 587
-    gmail_username: str = ""
-    gmail_password: str = ""
+    gmail_smtp_username: str = ""
+    gmail_smtp_app_password: str = ""
+    alert_recipient_email: str = ""
     openai_api_key: str = ""
     openai_news_summary_model: str = ""
     openai_news_filter_model: str = ""

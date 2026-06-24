@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 from sqlalchemy import func, or_
 from sqlalchemy.orm import Session, joinedload
 
-from app.db.models import AlertSetting, Holding, News, NewsCollectJob, NewsCollectJobItem, NewsStockLink, PriceAlert, Stock, StockCollectionSetting
+from app.db.models import AlertHistory, AlertSetting, Holding, News, NewsCollectJob, NewsCollectJobItem, NewsStockLink, PriceAlert, Stock, StockCollectionSetting
 
 
 def list_news(
@@ -206,3 +206,67 @@ def alert_summary_counts(db: Session):
     price_impact = db.query(func.count(News.id)).filter(News.is_alert_target.is_(True), News.gpt_filter_result == "price_impact").scalar() or 0
     high_importance = db.query(func.count(News.id)).filter(News.is_alert_target.is_(True), News.importance_score >= 7).scalar() or 0
     return alert_target, important, price_impact, high_importance
+
+
+def list_alert_send_candidates(db: Session, limit: int):
+    return db.query(News).options(joinedload(News.stock_links)).filter(
+        News.is_alert_target.is_(True),
+    ).order_by(
+        News.gpt_filter_result.in_(["important", "price_impact"]).desc(),
+        News.importance_score.desc(),
+        News.published_at.desc().nullslast(),
+        News.id.desc(),
+    ).limit(limit).all()
+
+
+def get_sent_alert_history(db: Session, news_id: int, stock_id: int | None):
+    query = db.query(AlertHistory).filter(
+        AlertHistory.alert_type == "news",
+        AlertHistory.news_id == news_id,
+        AlertHistory.status == "sent",
+    )
+    if stock_id is None:
+        query = query.filter(AlertHistory.stock_id.is_(None))
+    else:
+        query = query.filter(AlertHistory.stock_id == stock_id)
+    return query.first()
+
+
+def get_failed_alert_history(db: Session, news_id: int, stock_id: int | None):
+    query = db.query(AlertHistory).filter(
+        AlertHistory.alert_type == "news",
+        AlertHistory.news_id == news_id,
+        AlertHistory.status == "failed",
+    )
+    if stock_id is None:
+        query = query.filter(AlertHistory.stock_id.is_(None))
+    else:
+        query = query.filter(AlertHistory.stock_id == stock_id)
+    return query.first()
+
+
+def count_sent_alerts_since(db: Session, since: datetime):
+    return db.query(func.count(AlertHistory.id)).filter(
+        AlertHistory.alert_type == "news",
+        AlertHistory.status == "sent",
+        AlertHistory.sent_at >= since,
+    ).scalar() or 0
+
+
+def list_alert_histories(db: Session, status: str | None = None):
+    query = db.query(AlertHistory).filter(AlertHistory.alert_type == "news").order_by(AlertHistory.id.desc())
+    if status:
+        query = query.filter(AlertHistory.status == status)
+    return query.limit(200).all()
+
+
+def alert_history_summary_counts(db: Session):
+    total = db.query(func.count(AlertHistory.id)).filter(AlertHistory.alert_type == "news").scalar() or 0
+    sent = db.query(func.count(AlertHistory.id)).filter(AlertHistory.alert_type == "news", AlertHistory.status == "sent").scalar() or 0
+    failed = db.query(func.count(AlertHistory.id)).filter(AlertHistory.alert_type == "news", AlertHistory.status == "failed").scalar() or 0
+    skipped = db.query(func.count(AlertHistory.id)).filter(AlertHistory.alert_type == "news", AlertHistory.status == "skipped").scalar() or 0
+    today_start = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+    hour_start = datetime.utcnow() - timedelta(hours=1)
+    today_sent = count_sent_alerts_since(db, today_start)
+    hourly_sent = count_sent_alerts_since(db, hour_start)
+    return total, sent, failed, skipped, today_sent, hourly_sent

@@ -8,6 +8,10 @@ from app.domains.news.schemas import (
     AlertCandidateItem,
     AlertCandidateRecalculateResult,
     AlertCandidateSummary,
+    AlertHistoryRead,
+    AlertHistorySummary,
+    AlertSendRequest,
+    AlertSendResult,
     GptRunRequest,
     GptRunResult,
     GptStatusSummary,
@@ -22,6 +26,8 @@ from app.domains.news.schemas import (
 from app.domains.news.service import (
     collect_market_news,
     get_alert_candidates,
+    get_alert_histories,
+    get_alert_histories_summary,
     get_alert_summary,
     get_collect_job_detail,
     get_collect_jobs,
@@ -32,6 +38,8 @@ from app.domains.news.service import (
     get_news_list,
     get_news_summary,
     recalculate_alert_candidates,
+    dry_run_send_alerts,
+    send_alerts,
     run_gpt_filter,
     run_gpt_summary,
     update_gpt_review,
@@ -168,6 +176,26 @@ def alert_candidates(
 @router.get("/alerts/summary", response_model=AlertCandidateSummary)
 def alerts_summary(db: Session = Depends(get_db)):
     return get_alert_summary(db)
+
+
+@router.post("/alerts/send/dry-run", response_model=AlertSendResult)
+def dry_run_alert_send(payload: AlertSendRequest, db: Session = Depends(get_db)):
+    return dry_run_send_alerts(db, payload)
+
+
+@router.post("/alerts/send", response_model=AlertSendResult)
+def send_news_alerts(payload: AlertSendRequest, db: Session = Depends(get_db)):
+    return send_alerts(db, payload)
+
+
+@router.get("/alerts/histories", response_model=list[AlertHistoryRead])
+def alert_histories(status: str | None = None, db: Session = Depends(get_db)):
+    return get_alert_histories(db, status=status)
+
+
+@router.get("/alerts/histories/summary", response_model=AlertHistorySummary)
+def alert_histories_summary(db: Session = Depends(get_db)):
+    return get_alert_histories_summary(db)
 
 
 @router.get("/{news_id}", response_model=NewsRead)
