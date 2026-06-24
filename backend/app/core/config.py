@@ -14,6 +14,8 @@ class Settings(BaseSettings):
     gmail_smtp_username: str = ""
     gmail_smtp_app_password: str = ""
     alert_recipient_email: str = ""
+    krx_api_base_url: str = "https://data-dbg.krx.co.kr/svc/apis"
+    krx_auth_key: str = ""
     openai_api_key: str = ""
     openai_news_summary_model: str = ""
     openai_news_filter_model: str = ""

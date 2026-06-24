@@ -9,6 +9,7 @@ from app.domains.collection.router import router as collection_router
 from app.domains.memos.router import router as memos_router
 from app.domains.news.router import router as news_router
 from app.domains.portfolio.router import router as portfolio_router
+from app.domains.prices.router import router as prices_router
 from app.domains.settings.router import router as settings_router
 from app.domains.stocks.router import router as stocks_router
 from app.domains.trades.router import router as trades_router
@@ -35,6 +36,7 @@ def create_app() -> FastAPI:
     app.include_router(portfolio_router, prefix="/api/portfolio", tags=["portfolio"])
     app.include_router(trades_router, prefix="/api/trades", tags=["trades"])
     app.include_router(alerts_router, prefix="/api/alerts", tags=["alerts"])
+    app.include_router(prices_router, prefix="/api/prices", tags=["prices"])
     app.include_router(charts_router, prefix="/api/charts", tags=["charts"])
     app.include_router(memos_router, prefix="/api/memos", tags=["memos"])
     app.include_router(settings_router, prefix="/api/settings", tags=["settings"])

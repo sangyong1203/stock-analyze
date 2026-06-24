@@ -23,9 +23,12 @@
       <div class="panel-head">
         <div>
           <h2 class="section-title">종목 기본정보</h2>
-          <p class="muted">종목 코드, 시장, 섹터, 별칭, 관심 여부를 관리합니다.</p>
+          <p class="muted">종목 코드, 시장, 가격, 시가총액, 관심 여부를 관리합니다.</p>
         </div>
-        <el-button type="primary" @click="openCreate">종목 추가</el-button>
+        <div class="panel-actions">
+          <el-button :loading="collecting" @click="collectPrices">KRX 가격 수집</el-button>
+          <el-button type="primary" @click="openCreate">종목 추가</el-button>
+        </div>
       </div>
 
       <div class="toolbar">
@@ -54,6 +57,9 @@
               {{ row.change_rate ?? '-' }}
             </span>
           </template>
+        </el-table-column>
+        <el-table-column label="시가총액" width="150" align="right">
+          <template #default="{ row }">{{ formatNumber(row.market_cap) }}</template>
         </el-table-column>
         <el-table-column label="보유" width="80">
           <template #default="{ row }">
@@ -123,12 +129,14 @@
 import { ElMessage } from 'element-plus'
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 
+import { pricesApi } from './service/prices.api'
 import { stocksApi } from './service/stocks.api'
 import { stockToPayload } from './service/stocks.mapper'
 import type { Stock, StockPayload } from './service/stocks.types'
 import { formatNumber, normalizeStockCode, parseAliasText } from './service/stocks.utils'
 
 const loading = ref(false)
+const collecting = ref(false)
 const errorMessage = ref('')
 const stocks = ref<Stock[]>([])
 const favoriteOnly = ref(false)
@@ -220,10 +228,10 @@ async function saveStock() {
 
   if (editingStock.value) {
     await stocksApi.update(editingStock.value.id, payload)
-    ElMessage.success('종목을 수정했습니다.')
+    ElMessage.success('종목이 수정됐습니다.')
   } else {
     await stocksApi.create(payload)
-    ElMessage.success('종목을 추가했습니다.')
+    ElMessage.success('종목이 추가됐습니다.')
   }
 
   dialogVisible.value = false
@@ -237,8 +245,37 @@ async function toggleFavorite(stock: Stock) {
 
 async function deactivateStock(stock: Stock) {
   await stocksApi.deactivate(stock.id)
-  ElMessage.success('종목을 비활성화했습니다.')
+  ElMessage.success('종목이 비활성화됐습니다.')
   await loadStocks()
+}
+
+function todayText() {
+  const now = new Date()
+  const year = now.getFullYear()
+  const month = String(now.getMonth() + 1).padStart(2, '0')
+  const day = String(now.getDate()).padStart(2, '0')
+  return `${year}${month}${day}`
+}
+
+async function collectPrices() {
+  collecting.value = true
+  try {
+    const result = await pricesApi.collectKrxDaily({
+      bas_date: todayText(),
+      markets: ['KOSPI', 'KOSDAQ'],
+      dry_run: false,
+    })
+    if (result.error_count > 0) {
+      ElMessage.warning(`KRX 가격 수집 오류 ${result.error_count}건: ${result.errors[0] ?? '확인 필요'}`)
+    } else {
+      ElMessage.success(`KRX 가격 수집 완료: insert ${result.inserted_count}, update ${result.updated_count}`)
+    }
+    await loadStocks()
+  } catch (error) {
+    ElMessage.error(error instanceof Error ? error.message : 'KRX 가격 수집 실패')
+  } finally {
+    collecting.value = false
+  }
 }
 
 watch(favoriteOnly, loadStocks)
@@ -290,6 +327,13 @@ onMounted(loadStocks)
 
 .panel-head p {
   margin: 6px 0 0;
+}
+
+.panel-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .toolbar {
