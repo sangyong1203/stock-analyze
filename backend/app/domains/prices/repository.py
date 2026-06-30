@@ -4,6 +4,7 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.db.models import Stock, StockPrice, SystemLog
+from app.db.session import SessionLocal
 
 
 def get_stock_by_code(db: Session, code: str) -> Stock | None:
@@ -39,6 +40,10 @@ def get_price(db: Session, stock_id: int, price_date: date, timeframe: str) -> S
         )
         .first()
     )
+
+
+def get_latest_price_date(db: Session, stock_id: int, timeframe: str = "daily") -> date | None:
+    return db.query(func.max(StockPrice.date)).filter(StockPrice.stock_id == stock_id, StockPrice.timeframe == timeframe).scalar()
 
 
 def list_prices(
@@ -98,3 +103,22 @@ def summary_counts(db: Session):
 
 def create_system_log(db: Session, level: str, message: str, context: dict | None = None) -> None:
     db.add(SystemLog(level=level, category="krx_price_collection", message=message, context_json=context, created_at=datetime.utcnow()))
+
+
+def create_system_log_safely(level: str, message: str, context: dict | None = None) -> None:
+    log_db = SessionLocal()
+    try:
+        log_db.add(
+            SystemLog(
+                level=level,
+                category="krx_price_collection",
+                message=message,
+                context_json=context,
+                created_at=datetime.utcnow(),
+            )
+        )
+        log_db.commit()
+    except Exception:  # noqa: BLE001 - logging must not break collection flow.
+        log_db.rollback()
+    finally:
+        log_db.close()

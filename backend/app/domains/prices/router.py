@@ -5,7 +5,14 @@ from sqlalchemy.orm import Session
 
 from app.db.session import get_db
 from app.domains.prices import service
-from app.domains.prices.schemas import KrxDailyCollectRequest, KrxDailyCollectResult, PriceSummary, StockPriceRead
+from app.domains.prices.schemas import (
+    KrxDailyCollectRequest,
+    KrxDailyCollectResult,
+    KrxRangeCollectRequest,
+    KrxRangeCollectResult,
+    PriceSummary,
+    StockPriceRead,
+)
 
 router = APIRouter()
 
@@ -13,6 +20,11 @@ router = APIRouter()
 @router.post("/collect/krx/daily", response_model=KrxDailyCollectResult)
 def collect_krx_daily(payload: KrxDailyCollectRequest, db: Session = Depends(get_db)):
     return service.collect_krx_daily_prices(db, payload)
+
+
+@router.post("/collect/krx/range", response_model=KrxRangeCollectResult)
+def collect_krx_range(payload: KrxRangeCollectRequest, db: Session = Depends(get_db)):
+    return service.collect_krx_range_prices(db, payload)
 
 
 @router.get("/summary", response_model=PriceSummary)

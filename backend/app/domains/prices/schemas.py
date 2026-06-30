@@ -21,6 +21,40 @@ class KrxDailyCollectResult(BaseModel):
     errors: list[str] = Field(default_factory=list)
 
 
+class KrxRangeCollectRequest(BaseModel):
+    date_from: str = Field(pattern=r"^\d{8}$")
+    date_to: str = Field(pattern=r"^\d{8}$")
+    markets: list[str] = Field(default_factory=lambda: ["KOSPI", "KOSDAQ"])
+    dry_run: bool = False
+    skip_empty: bool = True
+
+
+class KrxRangeDateResult(BaseModel):
+    bas_date: str
+    fetched_count: int = 0
+    inserted_count: int = 0
+    updated_count: int = 0
+    stock_created_count: int = 0
+    skipped_empty: bool = False
+    error_count: int = 0
+    errors: list[str] = Field(default_factory=list)
+
+
+class KrxRangeCollectResult(BaseModel):
+    date_from: str
+    date_to: str
+    markets: list[str]
+    requested_date_count: int
+    fetched_count: int = 0
+    inserted_count: int = 0
+    updated_count: int = 0
+    stock_created_count: int = 0
+    skipped_empty_dates: int = 0
+    error_count: int = 0
+    errors: list[str] = Field(default_factory=list)
+    dates: list[KrxRangeDateResult] = Field(default_factory=list)
+
+
 class PriceSummary(BaseModel):
     total_price_rows: int
     latest_price_date: date | None

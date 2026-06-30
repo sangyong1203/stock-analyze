@@ -16,6 +16,13 @@ class OhlcvPoint(BaseModel):
     close: Decimal | None
     volume: int | None
     change_rate: Decimal | None
+    ma20: Decimal | None = None
+    ma60: Decimal | None = None
+    ma120: Decimal | None = None
+    rsi14: Decimal | None = None
+    macd: Decimal | None = None
+    macd_signal: Decimal | None = None
+    macd_histogram: Decimal | None = None
 
 
 class OhlcvResponse(BaseModel):

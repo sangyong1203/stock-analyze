@@ -6,6 +6,8 @@ from app.domains.alerts.router import router as alerts_router
 from app.domains.auth.router import router as auth_router
 from app.domains.charts.router import router as charts_router
 from app.domains.collection.router import router as collection_router
+from app.domains.funds.router import router as funds_router
+from app.domains.holdings.router import router as holdings_router
 from app.domains.memos.router import router as memos_router
 from app.domains.news.router import router as news_router
 from app.domains.portfolio.router import router as portfolio_router
@@ -33,6 +35,8 @@ def create_app() -> FastAPI:
     app.include_router(stocks_router, prefix="/api/stocks", tags=["stocks"])
     app.include_router(collection_router, prefix="/api/collection", tags=["collection"])
     app.include_router(news_router, prefix="/api/news", tags=["news"])
+    app.include_router(funds_router, prefix="/api/funds", tags=["funds"])
+    app.include_router(holdings_router, prefix="/api/holdings", tags=["holdings"])
     app.include_router(portfolio_router, prefix="/api/portfolio", tags=["portfolio"])
     app.include_router(trades_router, prefix="/api/trades", tags=["trades"])
     app.include_router(alerts_router, prefix="/api/alerts", tags=["alerts"])

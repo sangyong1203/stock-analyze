@@ -1,110 +1,65 @@
 # CODEX PROGRESS
 
-## 현재 작업 상태
+## 현재 단계
 
-- 현재 단계: CODEX_TASK_1.7 KRX 가격 데이터 수집 구조 완료
-- 마지막 작업 시간: 2026-06-24
-- 전체 진행률: 100%
-- 현재 작업 중인 파일: backend/app/external/krx/, backend/app/domains/prices/, backend/app/domains/charts/, frontend/src/pages/main/stocks/, frontend/src/pages/main/charts/, docs/
+- Phase: 거래 기록 / 보유 종목 / 손익 계산 구조 구현
+- 작업 문서: `docs/CODEX_TASK_1.11.md`
+- 상태: 구현 및 검증 완료
 
-## 완료한 작업
+## 완료된 주요 작업
 
-- [x] KRX 환경설정 추가
-  - 설명: `KRX_API_BASE_URL`, `KRX_AUTH_KEY` 설정을 추가했다.
-  - 관련 파일: backend/app/core/config.py, backend/.env.example
+- 자금 풀 생성/조회 API 구현
+- 입금/출금 기록 API 구현
+- 거래 기록 CRUD 구현
+- holdings 재계산 API 구현
+- holdings 요약 API 구현
+- 포트폴리오 요약 API 구현
+- 거래 화면 API 연결
+- 포트폴리오 화면 API 연결
+- Backend compile 성공
+- Frontend build 성공
 
-- [x] KRX daily price client 구현
-  - 설명: KOSPI `/sto/stk_bydd_trd`, KOSDAQ `/sto/ksq_bydd_trd` POST 호출, 인증 header, timeout, JSON 응답 검증, 숫자/날짜/종목코드 정규화 구조를 구현했다.
-  - 관련 파일: backend/app/external/krx/client.py, backend/app/external/krx/parser.py, backend/app/external/krx/types.py
+## 검증 결과
 
-- [x] stock_prices upsert 구현
-  - 설명: `stock_id + date + timeframe` 기준으로 insert/update하고, 신규 종목은 `stocks`에 기본 생성되도록 구현했다.
-  - 관련 파일: backend/app/domains/prices/repository.py, backend/app/domains/prices/service.py
-
-- [x] stocks 최신 가격 갱신 구현
-  - 설명: KRX 일봉 수집값 기준으로 `stocks.current_price`, `stocks.change_rate`, `stocks.market_cap`, `updated_at`을 갱신한다.
-  - 관련 파일: backend/app/domains/prices/service.py
-
-- [x] 가격 조회 API 구현
-  - 설명: KRX 수집 실행, 가격 요약, 종목별 가격 목록, 종목 최신 가격, 시장별 최신 가격 API를 구현했다.
-  - 관련 파일: backend/app/domains/prices/router.py, backend/app/domains/prices/schemas.py, backend/app/main.py
-
-- [x] 차트 OHLCV API 구현
-  - 설명: `stock_prices`를 기반으로 ECharts에서 사용 가능한 일봉 OHLCV 응답 API를 구현했다.
-  - 관련 파일: backend/app/domains/charts/router.py, backend/app/domains/charts/service.py, backend/app/domains/charts/repository.py, backend/app/domains/charts/schemas.py
-
-- [x] 종목 화면 가격 수집 연결
-  - 설명: 종목 화면에 KRX 가격 수집 버튼을 추가하고 수집 후 목록 refresh가 가능하도록 연결했다.
-  - 관련 파일: frontend/src/pages/main/stocks/StocksPage.vue, frontend/src/pages/main/stocks/service/prices.api.ts
-
-- [x] 차트 화면 OHLCV 연결
-  - 설명: 종목 선택, 일봉 OHLCV 조회, candlestick 차트, 거래량 bar, 데이터 없음 상태를 구현했다.
-  - 관련 파일: frontend/src/pages/main/charts/ChartsPage.vue, frontend/src/pages/main/charts/service/charts.api.ts, frontend/src/pages/main/charts/service/charts.types.ts
-
-- [x] 검증 완료
-  - 설명: Backend compile, Frontend build, 가격 summary API, KRX dry-run 401 응답 처리, mock KRX insert/update/latest/chart 검증을 완료했다.
-  - 관련 파일: backend/, frontend/
-
-- [x] KRX 가격 수집 리포트 작성
-  - 설명: API, client 구조, 필드 매핑, 저장 방식, 최신값 갱신 방식, 테스트 결과, 확인 필요 항목을 정리했다.
-  - 관련 파일: docs/KRX_PRICE_COLLECTION_REPORT.md
-
-## 진행 중인 작업
-
-- [x] CODEX_TASK_1.7 작업 완료
-  - 현재 상태: 구현 및 검증 완료
-  - 남은 작업: `KRX_AUTH_KEY` 발급/설정 후 실제 KRX 수집 재검증
-
-## 남은 작업
-
-- [ ] KOSPI/KOSDAQ 마지막 완료 영업일 기준 실제 저장 실행
-- [ ] OpenAI quota/billing 확인 후 GPT 필터 limit 1 재검증
-- [ ] 차트 고급 지표(MA, RSI, MACD)는 후속 작업에서 검토
-
-## 막힌 항목
-
-- 항목: 없음
-- 원인: 없음
-- 필요한 확인: 없음
-
-## 생성한 파일
-
-- 파일 경로: backend/app/external/krx/types.py
-- 설명: KRX 일봉 가격 타입
-- 파일 경로: backend/app/external/krx/parser.py
-- 설명: KRX 응답 파서 및 숫자/날짜 정규화
-- 파일 경로: backend/app/domains/prices/router.py
-- 설명: 가격 수집/조회 API 라우터
-- 파일 경로: frontend/src/pages/main/stocks/service/prices.api.ts
-- 설명: Frontend KRX 가격 수집 API client
-- 파일 경로: docs/KRX_PRICE_COLLECTION_REPORT.md
-- 설명: KRX 가격 데이터 수집 구조 리포트
-
-## 수정한 파일
-
-- 파일 경로: backend/app/core/config.py
-- 수정 내용: KRX 환경변수 추가
-- 파일 경로: backend/.env.example
-- 수정 내용: KRX 환경변수 예시 추가
-- 파일 경로: backend/app/external/krx/client.py
-- 수정 내용: KRX Open API client 구현
-- 파일 경로: backend/app/domains/prices/
-- 수정 내용: 가격 수집, upsert, 조회 API 구현
-- 파일 경로: backend/app/domains/charts/
-- 수정 내용: OHLCV API 구현
-- 파일 경로: backend/app/main.py
-- 수정 내용: prices router 등록
-- 파일 경로: frontend/src/pages/main/stocks/StocksPage.vue
-- 수정 내용: 가격 컬럼 표시 유지 및 KRX 가격 수집 버튼 추가
-- 파일 경로: frontend/src/pages/main/charts/
-- 수정 내용: 종목 선택 및 ECharts candlestick 연결
+| 항목 | 결과 |
+|---|---|
+| 자금 풀 생성 | 성공 |
+| 입금 기록 | 성공 |
+| 매수 거래 등록 | 성공 |
+| 매도 거래 등록 | 성공 |
+| holdings 재계산 | 성공 |
+| holdings 요약 API | 200 |
+| portfolio 요약 API | 200 |
+| Backend compile | 성공 |
+| Frontend build | 성공 |
+| Regression API | 모두 200 |
 
 ## 확인 필요 항목
 
-- 항목: KRX 인증키 및 KOSPI 조회
-- 이유: `KRX_AUTH_KEY` 로드와 KOSPI 과거 영업일 dry-run 조회는 성공했다.
-- 제안: KOSPI는 마지막 완료 영업일 기준으로 실제 수집을 실행한다.
+- 항목: `total_invested_amount` 해석
+- 관련 문서: `docs/CODEX_TASK_1.11.md`
+- 애매한 이유: 누적 입금 기준인지 현재 보유 원가 기준인지 불명확
+- 가능한 선택지: 누적 입금액, 현재 보유 원가, 둘 다 별도 제공
+- 추천안: 현재는 보유 원가 합계로 유지
+- 현재 구현 여부: 반영
 
-- 항목: KOSDAQ endpoint
-- 이유: `/sto/ksq_bydd_trd` dry-run이 `20250624` 기준 1795건으로 정상 확인됐다.
-- 제안: 해당 endpoint를 유지한다.
+- 항목: 오늘 변동 계산 기준
+- 관련 문서: `docs/CODEX_TASK_1.11.md`
+- 애매한 이유: 전일 종가 저장 필드 없이 `stocks.change_rate`만 존재
+- 가능한 선택지: 역산 사용, 전일 종가 저장 구조 추가, today 항목 보류
+- 추천안: MVP에서는 역산 사용
+- 현재 구현 여부: 반영
+
+- 항목: 종목명 인코딩
+- 관련 문서: `docs/DEVELOPMENT_REPORT.md`
+- 애매한 이유: 일부 종목명이 깨진 문자열로 보임
+- 가능한 선택지: KRX 파서 인코딩 정비, 종목명 재수집
+- 추천안: 데이터 정합성 작업에서 정비
+- 현재 구현 여부: 보류
+
+## 다음 작업 후보
+
+- 거래 관련 뉴스 연결 UI
+- 거래 가격 스냅샷 생성 연동
+- 보유 종목 차트 빠른 이동
+- 거래 메모/태그 연결 강화

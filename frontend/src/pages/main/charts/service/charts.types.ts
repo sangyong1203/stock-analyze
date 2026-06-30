@@ -8,6 +8,13 @@ export interface OhlcvPoint {
   close?: string | number | null
   volume?: number | null
   change_rate?: string | number | null
+  ma20?: string | number | null
+  ma60?: string | number | null
+  ma120?: string | number | null
+  rsi14?: string | number | null
+  macd?: string | number | null
+  macd_signal?: string | number | null
+  macd_histogram?: string | number | null
 }
 
 export interface OhlcvResponse {

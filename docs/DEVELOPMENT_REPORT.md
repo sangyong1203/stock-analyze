@@ -2,179 +2,188 @@
 
 ## 1. 작업 개요
 
-- 프로젝트명: stock-analyze
-- 작업 기준 문서:
-  - INVESTMENT_SYSTEM_PLAN_v1.2.md
-  - MVP_DB_SCHEMA_v1.2.md
-  - CODEX_TASK_1.7.md
-- 작업 범위: 1차 MVP 기반 구조, 종목/수집/뉴스/GPT/알림, Gmail 발송, KRX 가격 데이터 수집 및 차트 연결
-- 작업 완료 여부: 완료
+- 작업: CODEX_TASK_1.11 거래 기록 / 보유 종목 / 손익 계산 구조 구현
+- 목적: 자금 풀, 입출금, 매수/매도 거래, holdings 재계산, 포트폴리오 요약을 기존 테이블 기준으로 구현
+- DB 변경: 없음
+- 마이그레이션: 없음
 
-## 2. 완료한 작업
+## 2. 참고 문서
 
-- [x] 1차 MVP 기반 구조 구현
-  - 설명: FastAPI, SQLAlchemy, Alembic, Vue 3, Vite, Element Plus 기반 구조를 구성했다.
-  - 관련 파일: backend/, frontend/
+- `AGENTS.md`
+- `docs/INVESTMENT_SYSTEM_PLAN_v1.2.md`
+- `docs/MVP_DB_SCHEMA_v1.2.md`
+- `docs/CODEX_TASK_1.11.md`
 
-- [x] 종목/수집/뉴스/GPT/알림 구조 구현
-  - 설명: 종목 CRUD, KODEX 구성종목 import, 네이버 금융 뉴스 수집, GPT 요약/필터, 뉴스 알림 후보, Gmail 발송 구조를 구현했다.
-  - 관련 파일: backend/app/domains/, backend/app/external/, frontend/src/pages/main/
+## 3. 완료 작업
 
-- [x] KRX 가격 데이터 수집 구조 구현
-  - 설명: KRX daily price client, KOSPI/KOSDAQ endpoint 구조, `stock_prices` upsert, `stocks` 최신 가격 갱신, system_logs 오류 기록을 구현했다.
-  - 관련 파일: backend/app/external/krx/, backend/app/domains/prices/
+- `/api/funds/*` 자금 풀/입출금 API 구현
+- `/api/trades` 거래 기록 CRUD 구현
+- `/api/holdings`, `/api/holdings/summary`, `/api/holdings/recalculate` 구현
+- `/api/portfolio/summary` 구현
+- 평균단가 방식 holdings 재계산 구현
+- 매도 실현손익 계산 구현
+- 현재가 기준 평가금액/평가손익 계산 구현
+- 거래 화면 API 연결 및 등록/수정/삭제 폼 구현
+- 포트폴리오 화면 요약 카드/보유 목록/입출금/재계산 연결
 
-- [x] 가격 조회 및 차트 API 구현
-  - 설명: 가격 요약, 종목별 가격, 최신 가격, 시장별 최신 가격, 차트용 OHLCV API를 구현했다.
-  - 관련 파일: backend/app/domains/prices/, backend/app/domains/charts/
+## 4. 생성 파일
 
-- [x] Frontend 가격/차트 연결
-  - 설명: 종목 화면 KRX 가격 수집 버튼, 가격 컬럼 표시, 차트 화면 종목 선택 및 ECharts candlestick/거래량 표시를 구현했다.
-  - 관련 파일: frontend/src/pages/main/stocks/, frontend/src/pages/main/charts/
+- `backend/app/domains/funds/__init__.py`
+- `backend/app/domains/funds/router.py`
+- `backend/app/domains/funds/service.py`
+- `backend/app/domains/funds/repository.py`
+- `backend/app/domains/funds/schemas.py`
+- `backend/app/domains/holdings/__init__.py`
+- `backend/app/domains/holdings/router.py`
+- `backend/app/domains/holdings/service.py`
+- `backend/app/domains/holdings/repository.py`
+- `backend/app/domains/holdings/schemas.py`
+- `docs/PORTFOLIO_TRADE_REPORT.md`
+- `docs/CODEX_TASK_1.11_REPORT.md`
 
-## 3. 생성한 파일
+## 5. 수정 파일
 
-| 파일 | 설명 |
-| ---- | ---- |
-| backend/app/external/krx/types.py | KRX 일봉 가격 타입 |
-| backend/app/external/krx/parser.py | KRX 응답 파서 |
-| backend/app/domains/prices/router.py | 가격 수집/조회 API 라우터 |
-| frontend/src/pages/main/stocks/service/prices.api.ts | Frontend 가격 수집 API client |
-| docs/KRX_PRICE_COLLECTION_REPORT.md | KRX 가격 수집 구조 리포트 |
+- `backend/app/domains/trades/router.py`
+- `backend/app/domains/trades/service.py`
+- `backend/app/domains/trades/repository.py`
+- `backend/app/domains/trades/schemas.py`
+- `backend/app/domains/portfolio/router.py`
+- `backend/app/domains/portfolio/service.py`
+- `backend/app/domains/portfolio/repository.py`
+- `backend/app/domains/portfolio/schemas.py`
+- `backend/app/main.py`
+- `frontend/src/pages/main/trades/TradesPage.vue`
+- `frontend/src/pages/main/trades/service/trades.api.ts`
+- `frontend/src/pages/main/trades/service/trades.types.ts`
+- `frontend/src/pages/main/trades/service/trades.utils.ts`
+- `frontend/src/pages/main/portfolio/PortfolioPage.vue`
+- `frontend/src/pages/main/portfolio/service/portfolio.api.ts`
+- `frontend/src/pages/main/portfolio/service/portfolio.types.ts`
+- `frontend/src/pages/main/portfolio/service/portfolio.utils.ts`
+- `docs/CODEX_PROGRESS.md`
 
-## 4. 수정한 파일
+## 6. Backend 구현 결과
 
-| 파일 | 수정 내용 |
-| ---- | --------- |
-| backend/app/core/config.py | KRX 환경변수 추가 |
-| backend/.env.example | KRX 환경변수 예시 추가 |
-| backend/app/external/krx/client.py | KRX Open API client 구현 |
-| backend/app/domains/prices/ | 가격 수집, upsert, 조회 서비스 구현 |
-| backend/app/domains/charts/ | OHLCV 차트 API 구현 |
-| backend/app/main.py | prices router 등록 |
-| frontend/src/pages/main/stocks/StocksPage.vue | KRX 가격 수집 버튼 추가 및 한글 UI 정리 |
-| frontend/src/pages/main/charts/ | ECharts 기반 OHLCV 차트 연결 |
-| docs/CODEX_PROGRESS.md | CODEX_TASK_1.7 진행 결과 반영 |
-| docs/DEVELOPMENT_REPORT.md | 최신 완료 결과 반영 |
+- 신규 라우터:
+  - `/api/funds`
+  - `/api/holdings`
+- 기존 라우터 확장:
+  - `/api/trades`
+  - `/api/portfolio/summary`
+- 자금 흐름:
+  - 입금/출금은 `fund_transactions`에 기록하고 `fund_pools.cash_balance`를 즉시 반영
+  - 거래 생성/수정/삭제 시 대응하는 `fund_transactions`를 동기화
+- holdings 계산:
+  - trades를 시간순으로 순회
+  - 매수 시 총원가(`amount + fee + tax`) 기준 평균단가 계산
+  - 매도 시 평균단가 기준 실현손익 계산
+  - `holdings`는 재계산 시 fund_pool 단위로 재작성
+- 포트폴리오 요약:
+  - 총 현금, 총 평가금액, 총 평가손익, 실현손익, 총자산, 보유 종목 수 계산
+  - `today_change_amount`, `today_change_rate`는 `stocks.current_price`, `stocks.change_rate` 기준으로 계산
 
-## 5. 구현한 Backend 항목
+## 7. Frontend 구현 결과
 
-- FastAPI 구조: 도메인별 라우터 구성
-- DB 연결: SQLite 연결 유지
-- SQLAlchemy 모델: 기존 27개 MVP 테이블 사용, 신규 테이블 없음
-- Alembic: 신규 마이그레이션 없음
-- API 라우터: prices router 신규 등록, charts OHLCV 보완
-- Seed 구조: 변경 없음
-- KRX client: POST 요청, 인증 header, timeout, 응답 status/JSON 검증, 숫자 정규화 구현
-- 가격 저장: `stock_id + date + timeframe` 기준 insert/update
-- 최신값 갱신: `stocks.current_price`, `change_rate`, `market_cap` 갱신
+- 거래 화면:
+  - 자금 풀 선택
+  - 종목 검색
+  - 매수/매도 입력 폼
+  - 거래 목록, 수정, 삭제
+- 포트폴리오 화면:
+  - 요약 카드
+  - 자금 풀 생성
+  - 입금/출금 입력
+  - 보유 종목 목록
+  - 현금 흐름 목록
+  - holdings 재계산 버튼
 
-## 6. 구현한 Frontend 항목
+## 8. DB 구현 결과
 
-- 라우터: 기존 차트/종목 메뉴 유지
-- 레이아웃: 기존 MainLayout 사용
-- 메뉴: 종목 화면과 차트 화면 보완
-- 화면 골격: 종목 테이블 가격 컬럼, KRX 수집 버튼, 차트 종목 선택/조회 UI
-- API 연결 상태: 가격 수집 API, 차트 OHLCV API 연결 완료
+- 신규 테이블 없음
+- 신규 마이그레이션 없음
+- 기존 테이블만 사용:
+  - `fund_pools`
+  - `fund_transactions`
+  - `trades`
+  - `holdings`
+  - `stocks`
+  - `stock_prices`
 
-## 7. DB 구현 결과
-
-- 생성한 테이블 수: 변경 없음
-- 생성한 테이블 목록: 기존 27개 MVP 테이블 유지
-- 생성한 인덱스: 변경 없음
-- 마이그레이션 파일: 신규 없음
-- SQLite DB 생성 여부: 기존 DB 사용
-
-## 8. 실행 방법
-
-### Backend
+## 9. 실행 방법
 
 ```bash
 cd backend
-python -m pip install -r requirements.txt
 python -m uvicorn app.main:app --host 127.0.0.1 --port 8000
 ```
 
-### Frontend
-
 ```bash
 cd frontend
-npm install
 npm run dev -- --host 127.0.0.1 --port 5173
 ```
 
-### Migration
+브라우저 접속:
 
-```bash
-cd backend
-python -m alembic upgrade head
-python seeds/seed_defaults.py
+```text
+http://localhost:5173/trades
+http://localhost:5173/portfolio
 ```
 
-### KRX 설정
+## 10. 테스트 결과
 
-```env
-KRX_API_BASE_URL=https://data-dbg.krx.co.kr/svc/apis
-KRX_AUTH_KEY=
-```
+| 항목 | 결과 |
+|---|---|
+| `python -m compileall app` | 성공 |
+| `npm run build` | 성공 |
+| 자금 풀 생성 | 성공 |
+| 입금 기록 | 성공 |
+| 매수 거래 등록 | 성공 |
+| 매도 거래 등록 | 성공 |
+| holdings 재계산 | 성공 |
+| `/api/holdings/summary` | 200 |
+| `/api/portfolio/summary` | 200 |
+| 평가손익 계산 | 성공 |
+| `/health` | 200 |
+| `/api/auth/status` | 200 |
+| `/api/prices/summary` | 200 |
+| `/api/charts/stocks/2/ohlcv?limit=130` | 200 |
+| `/api/news/alerts/send/dry-run` | 200 |
 
-## 9. 테스트 결과
+## 11. 미완료 항목
 
-- Backend compile: `python -m compileall app` 성공
-- Frontend build: `npm run build` 성공
-- `/api/prices/summary`: 200 응답
-- `/api/prices/collect/krx/daily` dry_run: `KRX_AUTH_KEY` 설정 후 KOSPI `20250624` 기준 962건 조회 확인
-- KRX `20260624` 기준 KOSPI: 빈 데이터 응답 확인
-- KOSDAQ dry-run: 권한 재신청 후 `20250624` 기준 1795건 조회 확인
-- KRX 실제 저장: `20250624`, markets `["KOSPI", "KOSDAQ"]`, `dry_run=false` 실행 성공
-- KRX 실제 저장 결과: fetched 2757, inserted 2757, updated 0, stock_created 2410, error 0
-- 가격 요약: total_price_rows 2757, latest_price_date 2025-06-24, KOSPI 962, KOSDAQ 1795
-- 최신 가격 API: KOSPI/KOSDAQ 시장별 최신 가격 조회 200 응답
-- 임의 종목 검증: 삼성전자 stock_id 2, 알테오젠 stock_id 202 최신 가격 및 OHLCV API 200 응답
-- stocks 최신값 갱신: 삼성전자/알테오젠 current_price, change_rate, market_cap 갱신 확인
-- 차트 화면: `/main/charts` route 200 응답 및 OHLCV API 정상 확인. in-app browser 미제공으로 시각 캔버스 직접 확인은 미수행
-- KRX 반복 수집 검증: 동일 기준일 `20250624` 재실행 결과 fetched 2757, inserted 0, updated 2757, stock_created 0, error 0
-- 중복 row 검증: `stock_id + date + timeframe` 중복 그룹 0건, total_price_rows 2757 유지
-- 반복 수집 후 삼성전자/알테오젠 latest 및 OHLCV API 정상 유지
-- mock KRX 수집 검증: insert 1건, update 1건, 신규 stock 생성, 최신값 갱신 성공
-- `/api/prices/stocks/{stock_id}/latest`: mock 데이터 기준 200 응답
-- `/api/charts/stocks/{stock_id}/ohlcv`: mock 데이터 기준 200 응답
-- mock 검증용 임시 종목/가격 데이터 삭제 확인
-- 오류 여부: 최종 API 검증 기준 오류 없음
+- 거래 관련 뉴스 연결(`trade_news_links`) 입력 UI는 이번 작업 범위에서 제외
+- 거래 당시 가격 스냅샷(`price_snapshot_id`) 자동 생성은 이번 작업 범위에서 제외
 
-## 10. 미완료 항목
+## 12. 확인 필요 항목
 
-- 항목: 차트 화면 시각 확인
-- 이유: 현재 세션에서 in-app browser가 제공되지 않아 캔버스 렌더링을 직접 확인하지 못했다.
-- 다음 작업 제안: 사용자가 브라우저에서 `/main/charts`에 접속해 차트 표시를 확인한다.
+- 항목: `total_invested_amount` 해석
+- 관련 문서: `docs/CODEX_TASK_1.11.md`
+- 애매한 이유: 총 투자금이 누적 입금 기준인지 현재 보유 원가 기준인지 문서에서 명시되지 않음
+- 가능한 선택지: 누적 입금액, 현재 보유 원가, 둘 다 별도 제공
+- 추천안: 현재는 보유 원가(`holdings.total_buy_amount` 합계)로 구현
+- 현재 구현 여부: 반영
 
-- 항목: OpenAI GPT 필터 실제 성공 검증
-- 이유: OpenAI quota 부족으로 filter limit 1 실제 호출이 실패 처리됐다.
-- 다음 작업 제안: OpenAI billing/quota 확인 후 filter limit 1부터 재검증한다.
+- 항목: 오늘 변동 계산 기준
+- 관련 문서: `docs/CODEX_TASK_1.11.md`
+- 애매한 이유: 별도 전일 종가 필드 없이 `stocks.change_rate`만 존재
+- 가능한 선택지: `change_rate` 역산 사용, 전일 종가 저장 구조 추가, today 항목 보류
+- 추천안: MVP에서는 `current_price + change_rate` 역산 사용
+- 현재 구현 여부: 반영
 
-## 11. 확인 필요 항목
+- 항목: 종목명 인코딩
+- 관련 문서: `docs/DEVELOPMENT_REPORT.md` 직전 확인 필요 항목
+- 애매한 이유: 일부 종목명이 DB에 깨진 문자열로 저장되어 거래/보유 화면에서도 그대로 표시됨
+- 가능한 선택지: KRX 파서 인코딩 정비, 종목명 재수집
+- 추천안: 데이터 정합성 작업에서 별도 정비
+- 현재 구현 여부: 보류
 
-- 항목: 실제 수집 기준일
-- 확인이 필요한 이유: 당일 또는 미래 날짜는 빈 데이터일 수 있다.
-- 제안: 마지막 완료 영업일 기준으로 실행한다.
+## 13. 다음 단계 제안
 
-- 항목: 후속 영업일 수집 기준
-- 확인이 필요한 이유: 동일 기준일 update 경로와 중복 방지는 검증 완료됐고, 다음에는 운영 기준일 선정이 필요하다.
-- 제안: 마지막 완료 영업일 기준으로 정기 수집을 실행한다.
+- 거래 관련 뉴스 연결 입력 UI 추가
+- 가격 스냅샷 자동 생성 연동
+- 보유 종목 차트 빠른 이동
+- 손절/목표가 기반 거래 보조 입력 검토
 
-## 12. 다음 단계 제안
+## 14. 최종 완료 문장
 
-- 다음 단계 1: 후속 영업일 기준 KRX 실제 수집 실행
-- 다음 단계 2: 차트 기간 필터와 종목 검색 UX 보완
-- 다음 단계 3: MA20/60/120, RSI, MACD 계산 구조 구현 검토
-
-## 13. 최종 완료 선언
-
-모든 지시 내용 작업 완료 여부:
-
-- [x] 완료
-- [ ] 일부 미완료
-
-최종 메시지:
-
-“KRX 가격 데이터 수집 구조 작업 완료했습니다. DEVELOPMENT_REPORT.md를 확인해 주세요.”
+거래 기록, 보유 종목, 손익 계산 구조 작업 완료했습니다.
+DEVELOPMENT_REPORT.md를 확인해 주세요.
