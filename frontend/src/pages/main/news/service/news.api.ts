@@ -15,6 +15,7 @@ import type {
   NewsReviewItem,
   NewsReviewUpdate,
   NewsSummary,
+  RelatedTrade,
 } from './news.types'
 
 function toQuery(filters: NewsFilters) {
@@ -71,4 +72,5 @@ export const newsApi = {
     }),
   alertCandidates: (filters: NewsFilters) => apiRequest<AlertCandidateItem[]>(`/api/news/alerts/candidates${toQuery(filters)}`),
   alertSummary: () => apiRequest<AlertCandidateSummary>('/api/news/alerts/summary'),
+  relatedTrades: (newsId: number) => apiRequest<RelatedTrade[]>(`/api/news/${newsId}/trades`),
 }

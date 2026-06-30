@@ -45,6 +45,24 @@ export interface News {
   stock_links: NewsStockLink[]
 }
 
+export interface RelatedTrade {
+  id: number
+  trade_id: number
+  news_id: number
+  link_type: string
+  memo?: string | null
+  created_at: string
+  fund_pool_id: number
+  fund_pool_name: string
+  stock_id: number
+  stock_code: string
+  stock_name: string
+  trade_type: string
+  trade_date: string
+  quantity: number
+  price: string | number
+}
+
 export interface NewsFilters {
   keyword?: string
   stock_code?: string

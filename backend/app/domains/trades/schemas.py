@@ -54,3 +54,39 @@ class TradeRead(BaseModel):
     updated_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class TradeNewsLinkCreate(BaseModel):
+    news_id: int
+    link_type: str = Field(default="reference", min_length=1, max_length=30)
+    memo: str | None = None
+
+
+class TradeNewsRead(BaseModel):
+    id: int
+    trade_id: int
+    news_id: int
+    link_type: str
+    memo: str | None = None
+    created_at: datetime
+    title: str
+    source: str | None = None
+    published_at: datetime | None = None
+
+
+class NewsTradeRead(BaseModel):
+    id: int
+    trade_id: int
+    news_id: int
+    link_type: str
+    memo: str | None = None
+    created_at: datetime
+    fund_pool_id: int
+    fund_pool_name: str
+    stock_id: int
+    stock_code: str
+    stock_name: str
+    trade_type: str
+    trade_date: date
+    quantity: int
+    price: Decimal

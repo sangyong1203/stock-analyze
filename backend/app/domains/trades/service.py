@@ -3,10 +3,10 @@ from decimal import Decimal
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
-from app.db.models import FundPool, FundTransaction, Stock, Trade
+from app.db.models import FundPool, FundTransaction, News, Stock, Trade, TradeNewsLink
 from app.domains.holdings.service import recalculate_holdings
 from app.domains.trades import repository
-from app.domains.trades.schemas import TradeCreate, TradeRead, TradeUpdate
+from app.domains.trades.schemas import NewsTradeRead, TradeCreate, TradeNewsLinkCreate, TradeNewsRead, TradeRead, TradeUpdate
 
 
 def _to_decimal(value: Decimal | int | float | str | None) -> Decimal:
@@ -60,6 +60,48 @@ def _get_stock(db: Session, stock_id: int) -> Stock:
     if item is None:
         raise HTTPException(status_code=404, detail="stock not found")
     return item
+
+
+def _get_news(db: Session, news_id: int) -> News:
+    item = db.get(News, news_id)
+    if item is None:
+        raise HTTPException(status_code=404, detail="news not found")
+    return item
+
+
+def _serialize_trade_news_link(item: TradeNewsLink, title: str, source: str | None, published_at) -> TradeNewsRead:
+    return TradeNewsRead(
+        id=item.id,
+        trade_id=item.trade_id,
+        news_id=item.news_id,
+        link_type=item.link_type,
+        memo=item.memo,
+        created_at=item.created_at,
+        title=title,
+        source=source,
+        published_at=published_at,
+    )
+
+
+def _serialize_news_trade_link(row) -> NewsTradeRead:
+    item, fund_pool_name, stock_code, stock_name, fund_pool_id, stock_id, trade_type, trade_date, quantity, price = row
+    return NewsTradeRead(
+        id=item.id,
+        trade_id=item.trade_id,
+        news_id=item.news_id,
+        link_type=item.link_type,
+        memo=item.memo,
+        created_at=item.created_at,
+        fund_pool_id=fund_pool_id,
+        fund_pool_name=fund_pool_name,
+        stock_id=stock_id,
+        stock_code=stock_code,
+        stock_name=stock_name,
+        trade_type=trade_type,
+        trade_date=trade_date,
+        quantity=quantity,
+        price=price,
+    )
 
 
 def _build_trade_values(
@@ -289,3 +331,40 @@ def delete_trade(db: Session, trade_id: int) -> dict[str, int]:
     db.commit()
     recalculate_holdings(db, fund_pool_id)
     return {"deleted_trade_id": trade_id}
+
+
+def get_trade_related_news(db: Session, trade_id: int):
+    if repository.get_trade(db, trade_id) is None:
+        raise HTTPException(status_code=404, detail="trade not found")
+    return [_serialize_trade_news_link(item, title, source, published_at) for item, title, source, published_at in repository.list_trade_news_links(db, trade_id)]
+
+
+def link_trade_news(db: Session, trade_id: int, payload: TradeNewsLinkCreate):
+    if repository.get_trade(db, trade_id) is None:
+        raise HTTPException(status_code=404, detail="trade not found")
+    _get_news(db, payload.news_id)
+    if repository.get_trade_news_link(db, trade_id, payload.news_id) is not None:
+        raise HTTPException(status_code=409, detail="trade news link already exists")
+    item = TradeNewsLink(
+        trade_id=trade_id,
+        news_id=payload.news_id,
+        link_type=payload.link_type.strip(),
+        memo=payload.memo,
+    )
+    db.add(item)
+    db.commit()
+    return get_trade_related_news(db, trade_id)[0]
+
+
+def unlink_trade_news(db: Session, trade_id: int, news_id: int) -> dict[str, int]:
+    item = repository.get_trade_news_link(db, trade_id, news_id)
+    if item is None:
+        raise HTTPException(status_code=404, detail="trade news link not found")
+    db.delete(item)
+    db.commit()
+    return {"trade_id": trade_id, "news_id": news_id}
+
+
+def get_news_related_trades(db: Session, news_id: int):
+    _get_news(db, news_id)
+    return [_serialize_news_trade_link(row) for row in repository.list_news_trade_links(db, news_id)]

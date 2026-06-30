@@ -44,6 +44,8 @@ from app.domains.news.service import (
     run_gpt_summary,
     update_gpt_review,
 )
+from app.domains.trades.schemas import NewsTradeRead
+from app.domains.trades.service import get_news_related_trades
 
 router = APIRouter()
 
@@ -196,6 +198,11 @@ def alert_histories(status: str | None = None, db: Session = Depends(get_db)):
 @router.get("/alerts/histories/summary", response_model=AlertHistorySummary)
 def alert_histories_summary(db: Session = Depends(get_db)):
     return get_alert_histories_summary(db)
+
+
+@router.get("/{news_id}/trades", response_model=list[NewsTradeRead])
+def related_trades(news_id: int, db: Session = Depends(get_db)):
+    return get_news_related_trades(db, news_id)
 
 
 @router.get("/{news_id}", response_model=NewsRead)

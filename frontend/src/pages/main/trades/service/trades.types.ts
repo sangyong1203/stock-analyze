@@ -24,6 +24,24 @@ export interface Trade {
   updated_at: string
 }
 
+export interface TradeNewsLink {
+  id: number
+  trade_id: number
+  news_id: number
+  link_type: string
+  memo?: string | null
+  created_at: string
+  title: string
+  source?: string | null
+  published_at?: string | null
+}
+
+export interface TradeNewsLinkPayload {
+  news_id: number
+  link_type?: string
+  memo?: string | null
+}
+
 export interface TradePayload {
   fund_pool_id: number
   stock_id: number

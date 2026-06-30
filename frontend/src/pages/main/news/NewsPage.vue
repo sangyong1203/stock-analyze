@@ -272,6 +272,82 @@
             </el-form-item>
           </el-form>
         </div>
+
+        <div class="review-editor">
+          <h4>관련 거래 연결</h4>
+          <div class="link-row">
+            <el-select v-model="selectedTradeIdToLink" placeholder="거래 선택" clearable filterable>
+              <el-option
+                v-for="trade in availableTrades"
+                :key="trade.id"
+                :label="`${trade.trade_date} / ${trade.stock_name} / ${trade.trade_type}`"
+                :value="trade.id"
+              />
+            </el-select>
+            <el-button type="primary" :loading="tradeLinkSubmitting" @click="linkTradeToNews">거래 연결</el-button>
+          </div>
+          <el-table :data="relatedTrades" size="small" border>
+            <el-table-column prop="trade_date" label="거래일" width="110" />
+            <el-table-column label="종목" min-width="150">
+              <template #default="{ row }">{{ row.stock_name }} ({{ row.stock_code }})</template>
+            </el-table-column>
+            <el-table-column prop="trade_type" label="구분" width="80" />
+            <el-table-column prop="quantity" label="수량" width="80" />
+            <el-table-column label="관리" width="90">
+              <template #default="{ row }">
+                <el-button text size="small" type="danger" @click="unlinkTradeFromNews(row.trade_id)">해제</el-button>
+              </template>
+            </el-table-column>
+          </el-table>
+        </div>
+
+        <div class="review-editor">
+          <h4>뉴스 메모</h4>
+          <el-form label-position="top" @submit.prevent>
+            <el-form-item label="제목">
+              <el-input v-model="newsMemoForm.title" />
+            </el-form-item>
+            <el-form-item label="내용">
+              <el-input v-model="newsMemoForm.content" type="textarea" :rows="3" />
+            </el-form-item>
+            <div class="link-row">
+              <el-button @click="resetNewsMemoForm">초기화</el-button>
+              <el-button type="primary" :loading="memoSubmitting" @click="saveNewsMemo">
+                {{ newsMemoForm.id ? '메모 수정' : '메모 추가' }}
+              </el-button>
+            </div>
+          </el-form>
+          <el-table :data="newsMemos" size="small" border>
+            <el-table-column prop="title" label="제목" min-width="140" />
+            <el-table-column prop="content" label="내용" min-width="220" show-overflow-tooltip />
+            <el-table-column label="관리" width="120">
+              <template #default="{ row }">
+                <el-button text size="small" @click="editNewsMemo(row)">수정</el-button>
+                <el-button text size="small" type="danger" @click="removeNewsMemo(row.id)">삭제</el-button>
+              </template>
+            </el-table-column>
+          </el-table>
+        </div>
+
+        <div class="review-editor">
+          <h4>뉴스 태그</h4>
+          <div class="link-row tags-row">
+            <el-tag v-for="tag in newsTagLinks" :key="tag.id" closable @close="removeNewsTag(tag.tag_id)">
+              {{ tag.tag_name }}
+            </el-tag>
+            <span v-if="newsTagLinks.length === 0">연결된 태그가 없습니다.</span>
+          </div>
+          <div class="link-row">
+            <el-select v-model="selectedNewsTagId" placeholder="기존 태그 연결" clearable>
+              <el-option v-for="tag in availableNewsTags" :key="tag.id" :label="tag.name" :value="tag.id" />
+            </el-select>
+            <el-button :loading="tagSubmitting" @click="linkExistingNewsTag">기존 태그 연결</el-button>
+          </div>
+          <div class="link-row">
+            <el-input v-model="newNewsTagName" placeholder="새 태그 이름" />
+            <el-button type="primary" :loading="tagSubmitting" @click="createAndLinkNewsTag">새 태그 추가</el-button>
+          </div>
+        </div>
       </div>
     </el-drawer>
   </section>
@@ -280,6 +356,10 @@
 <script setup lang="ts">
 import { ElMessage } from 'element-plus'
 import { onMounted, reactive, ref, watch } from 'vue'
+
+import { memosApi } from '@/pages/main/memos/service/memos.api'
+import type { Memo, Tag, TagLink } from '@/pages/main/memos/service/memos.types'
+import { tradesApi } from '@/pages/main/trades/service/trades.api'
 
 import { newsApi } from './service/news.api'
 import type {
@@ -291,6 +371,7 @@ import type {
   NewsCollectJob,
   NewsReviewItem,
   NewsSummary,
+  RelatedTrade,
 } from './service/news.types'
 import { formatDateTime, formatNumber, importanceTagType } from './service/news.utils'
 
@@ -307,12 +388,29 @@ const reviewRows = ref<NewsReviewItem[]>([])
 const alertRows = ref<AlertCandidateItem[]>([])
 const selectedNews = ref<News | null>(null)
 const detailOpen = ref(false)
+const relatedTrades = ref<RelatedTrade[]>([])
+const newsMemos = ref<Memo[]>([])
+const newsTagLinks = ref<TagLink[]>([])
+const availableNewsTags = ref<Tag[]>([])
+const availableTrades = ref<import('@/pages/main/trades/service/trades.types').Trade[]>([])
 const importanceFilter = ref<number | undefined>()
 const publishedRange = ref<[string, string] | null>(null)
 const gptRunning = ref(false)
 const gptTargetFilter = ref('')
 const savingReview = ref(false)
 const alertRecalculating = ref(false)
+const memoSubmitting = ref(false)
+const tagSubmitting = ref(false)
+const tradeLinkSubmitting = ref(false)
+const selectedTradeIdToLink = ref<number | null>(null)
+const selectedNewsTagId = ref<number | null>(null)
+const newNewsTagName = ref('')
+
+const newsMemoForm = reactive({
+  id: null as number | null,
+  title: '',
+  content: '',
+})
 
 const filters = reactive({
   keyword: '',
@@ -387,6 +485,21 @@ async function loadData() {
   }
 }
 
+async function loadNewsConnections(newsId: number) {
+  const [tradeRows, memoRows, tagRows, tagList, tradeList] = await Promise.all([
+    newsApi.relatedTrades(newsId),
+    memosApi.list({ news_id: newsId }),
+    memosApi.listTagLinks('news', newsId),
+    memosApi.listTags({ tag_type: 'news' }),
+    tradesApi.list(),
+  ])
+  relatedTrades.value = tradeRows
+  newsMemos.value = memoRows
+  newsTagLinks.value = tagRows
+  availableNewsTags.value = tagList
+  availableTrades.value = tradeList
+}
+
 async function collectMarketNews() {
   collecting.value = true
   try {
@@ -445,12 +558,124 @@ function openDetail(row: News) {
   reviewForm.gpt_filter_reason = row.gpt_filter_reason ?? ''
   reviewForm.is_alert_target = row.is_alert_target
   reviewForm.filter_status = row.filter_status ?? ''
+  newsMemoForm.id = null
+  newsMemoForm.title = ''
+  newsMemoForm.content = ''
+  selectedTradeIdToLink.value = null
+  selectedNewsTagId.value = null
+  newNewsTagName.value = ''
   detailOpen.value = true
+  void loadNewsConnections(row.id)
 }
 
 async function openReview(newsId: number) {
   const detail = await newsApi.detail(newsId)
   openDetail(detail)
+}
+
+function editNewsMemo(item: Memo) {
+  newsMemoForm.id = item.id
+  newsMemoForm.title = item.title ?? ''
+  newsMemoForm.content = item.content
+}
+
+function resetNewsMemoForm() {
+  newsMemoForm.id = null
+  newsMemoForm.title = ''
+  newsMemoForm.content = ''
+}
+
+async function saveNewsMemo() {
+  if (!selectedNews.value || !newsMemoForm.content.trim()) return
+  memoSubmitting.value = true
+  try {
+    if (newsMemoForm.id) {
+      await memosApi.update(newsMemoForm.id, {
+        title: newsMemoForm.title,
+        content: newsMemoForm.content,
+      })
+    } else {
+      await memosApi.create({
+        memo_type: 'news',
+        news_id: selectedNews.value.id,
+        title: newsMemoForm.title,
+        content: newsMemoForm.content,
+      })
+    }
+    resetNewsMemoForm()
+    await loadNewsConnections(selectedNews.value.id)
+  } finally {
+    memoSubmitting.value = false
+  }
+}
+
+async function removeNewsMemo(memoId: number) {
+  if (!selectedNews.value) return
+  await memosApi.remove(memoId)
+  await loadNewsConnections(selectedNews.value.id)
+}
+
+async function linkExistingNewsTag() {
+  if (!selectedNews.value || !selectedNewsTagId.value) return
+  tagSubmitting.value = true
+  try {
+    await memosApi.createTagLink({
+      tag_id: selectedNewsTagId.value,
+      target_type: 'news',
+      target_id: selectedNews.value.id,
+    })
+    selectedNewsTagId.value = null
+    await loadNewsConnections(selectedNews.value.id)
+  } finally {
+    tagSubmitting.value = false
+  }
+}
+
+async function createAndLinkNewsTag() {
+  if (!selectedNews.value || !newNewsTagName.value.trim()) return
+  tagSubmitting.value = true
+  try {
+    const tag = await memosApi.createTag({
+      name: newNewsTagName.value.trim(),
+      tag_type: 'news',
+    })
+    await memosApi.createTagLink({
+      tag_id: tag.id,
+      target_type: 'news',
+      target_id: selectedNews.value.id,
+    })
+    newNewsTagName.value = ''
+    await loadNewsConnections(selectedNews.value.id)
+  } finally {
+    tagSubmitting.value = false
+  }
+}
+
+async function removeNewsTag(tagId: number) {
+  if (!selectedNews.value) return
+  await memosApi.removeTagLink(tagId, 'news', selectedNews.value.id)
+  await loadNewsConnections(selectedNews.value.id)
+}
+
+async function linkTradeToNews() {
+  if (!selectedNews.value || !selectedTradeIdToLink.value) return
+  tradeLinkSubmitting.value = true
+  try {
+    await tradesApi.linkNews(selectedTradeIdToLink.value, {
+      news_id: selectedNews.value.id,
+      link_type: 'reference',
+    })
+    selectedTradeIdToLink.value = null
+    await loadNewsConnections(selectedNews.value.id)
+  } finally {
+    tradeLinkSubmitting.value = false
+  }
+}
+
+async function unlinkTradeFromNews(tradeId: number) {
+  if (!selectedNews.value) return
+  await tradesApi.unlinkNews(tradeId, selectedNews.value.id)
+  await loadNewsConnections(selectedNews.value.id)
 }
 
 async function saveReview() {
@@ -592,6 +817,21 @@ onMounted(loadData)
 
 .review-editor h4 {
   margin: 0 0 12px;
+}
+
+.link-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.link-row > * {
+  flex: 1;
+}
+
+.tags-row > * {
+  flex: 0 0 auto;
 }
 
 @media (max-width: 1100px) {
