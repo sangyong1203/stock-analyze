@@ -2,20 +2,19 @@
 
 ## 현재 단계
 
-- Phase: 거래 기록 / 보유 종목 / 손익 계산 구조 구현
-- 작업 문서: `docs/CODEX_TASK_1.11.md`
+- Phase: 가격 알림 조건 / Gmail 발송 연결 / Alerts 화면 정리
+- 작업 문서: `docs/CODEX_TASK_1.12.md`
 - 상태: 구현 및 검증 완료
 
 ## 완료된 주요 작업
 
-- 자금 풀 생성/조회 API 구현
-- 입금/출금 기록 API 구현
-- 거래 기록 CRUD 구현
-- holdings 재계산 API 구현
-- holdings 요약 API 구현
-- 포트폴리오 요약 API 구현
-- 거래 화면 API 연결
-- 포트폴리오 화면 API 연결
+- `price_alerts` CRUD API 구현
+- 가격 알림 평가 API 구현
+- `TARGET_PRICE_ABOVE`, `TARGET_PRICE_BELOW`, `DROP_FROM_HIGH`, `RISE_FROM_LOW` 조건 구현
+- Gmail SMTP 실제 발송 연결 구현
+- `alert_histories` sent / failed / skipped 기록 구현
+- 동일 일자 중복 발송 skip 처리 구현
+- Alerts 화면을 가격 알림 관리 화면으로 재구성
 - Backend compile 성공
 - Frontend build 성공
 
@@ -23,43 +22,41 @@
 
 | 항목 | 결과 |
 |---|---|
-| 자금 풀 생성 | 성공 |
-| 입금 기록 | 성공 |
-| 매수 거래 등록 | 성공 |
-| 매도 거래 등록 | 성공 |
-| holdings 재계산 | 성공 |
-| holdings 요약 API | 200 |
-| portfolio 요약 API | 200 |
+| 가격 알림 생성 | 성공 |
+| 가격 알림 조회 | 성공 |
+| 가격 알림 수정 | 성공 |
+| 가격 알림 삭제 | 성공 |
+| 목표가 이상 조건 | 성공 |
+| 목표가 이하 조건 | 성공 |
+| 고점 대비 하락률 조건 | 성공 |
+| 저점 대비 상승률 조건 | 성공 |
+| dry-run 평가 | 성공 |
+| 실제 Gmail 발송 1건 | 성공 |
+| 동일 일자 중복 발송 skip | 성공 |
+| `/api/price-alerts/summary` | 200 |
+| `/api/price-alerts/histories` | 200 |
 | Backend compile | 성공 |
 | Frontend build | 성공 |
 | Regression API | 모두 200 |
 
 ## 확인 필요 항목
 
-- 항목: `total_invested_amount` 해석
-- 관련 문서: `docs/CODEX_TASK_1.11.md`
-- 애매한 이유: 누적 입금 기준인지 현재 보유 원가 기준인지 불명확
-- 가능한 선택지: 누적 입금액, 현재 보유 원가, 둘 다 별도 제공
-- 추천안: 현재는 보유 원가 합계로 유지
+- 항목: `lookback_days` 저장 위치
+- 관련 문서: `docs/CODEX_TASK_1.12.md`
+- 애매한 이유: `price_alerts` 테이블에 전용 `lookback_days` 컬럼이 없음
+- 가능한 선택지: `base_price` 재사용, 메모 문자열 저장, 새 컬럼 추가
+- 추천안: 이번 작업에서는 마이그레이션 없이 `base_price`를 정수형 `lookback_days` 보관 용도로 재사용
 - 현재 구현 여부: 반영
 
-- 항목: 오늘 변동 계산 기준
-- 관련 문서: `docs/CODEX_TASK_1.11.md`
-- 애매한 이유: 전일 종가 저장 필드 없이 `stocks.change_rate`만 존재
-- 가능한 선택지: 역산 사용, 전일 종가 저장 구조 추가, today 항목 보류
-- 추천안: MVP에서는 역산 사용
-- 현재 구현 여부: 반영
-
-- 항목: 종목명 인코딩
+- 항목: 종목명 인코딩 깨짐
 - 관련 문서: `docs/DEVELOPMENT_REPORT.md`
-- 애매한 이유: 일부 종목명이 깨진 문자열로 보임
-- 가능한 선택지: KRX 파서 인코딩 정비, 종목명 재수집
-- 추천안: 데이터 정합성 작업에서 정비
+- 애매한 이유: DB 내 일부 종목명이 깨진 문자열로 남아 있어 알림 제목/본문에도 그대로 반영됨
+- 가능한 선택지: KRX 원본 재정비, 종목명 정제 스크립트, 표시 레이어 보정
+- 추천안: 별도 데이터 정비 작업으로 분리
 - 현재 구현 여부: 보류
 
 ## 다음 작업 후보
 
-- 거래 관련 뉴스 연결 UI
-- 거래 가격 스냅샷 생성 연동
-- 보유 종목 차트 빠른 이동
-- 거래 메모/태그 연결 강화
+- 가격 알림 생성 진입 버튼을 stocks / portfolio 화면으로 연결
+- 가격 알림 발송 본문 템플릿 고도화
+- 종목명 인코딩 정리

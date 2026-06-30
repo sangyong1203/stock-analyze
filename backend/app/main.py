@@ -39,7 +39,7 @@ def create_app() -> FastAPI:
     app.include_router(holdings_router, prefix="/api/holdings", tags=["holdings"])
     app.include_router(portfolio_router, prefix="/api/portfolio", tags=["portfolio"])
     app.include_router(trades_router, prefix="/api/trades", tags=["trades"])
-    app.include_router(alerts_router, prefix="/api/alerts", tags=["alerts"])
+    app.include_router(alerts_router, prefix="/api/price-alerts", tags=["price-alerts"])
     app.include_router(prices_router, prefix="/api/prices", tags=["prices"])
     app.include_router(charts_router, prefix="/api/charts", tags=["charts"])
     app.include_router(memos_router, prefix="/api/memos", tags=["memos"])
