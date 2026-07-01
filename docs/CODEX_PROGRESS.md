@@ -2,19 +2,26 @@
 
 ## Current phase
 
-- Phase: memo / tag CRUD and trade-news link validation
-- Task document: `docs/CODEX_TASK_1.13.md`
+- Phase: dashboard summary API and dashboard page integration
+- Task document: `docs/CODEX_TASK_1.14.md`
 - Status: implementation and verification complete
 
 ## Completed major work
 
-- Added memo CRUD API for `stock`, `trade`, `news`, and `general`
-- Added tag CRUD API and `tag_links` link / unlink / list API
-- Added trade-news link API on both trade and news views
-- Added trade detail drawer support for memo, tag, and related news management
-- Added news detail drawer support for related trade, memo, and tag management
-- Added backend `tags` domain and router registration
-- Fixed `DELETE /api/tags/link` route order issue found during verification
+- Added `dashboard` backend domain
+- Added `GET /api/dashboard/summary`
+- Reused existing portfolio, holdings, price-alert, and news-alert summaries
+- Added dashboard aggregate sections for:
+  - top holdings
+  - top gainers
+  - top losers
+  - recent trades
+  - recent news
+  - recent alert histories
+  - recent memos
+  - top tags
+- Replaced dashboard frontend placeholder with live API-based screen
+- Added dashboard quick navigation buttons
 - Backend compile passed
 - Frontend build passed
 
@@ -22,43 +29,35 @@
 
 | Item | Result |
 |---|---|
-| `GET /api/memos` | success |
-| `POST /api/memos` | success |
-| `GET /api/memos/{memo_id}` | success |
-| `PATCH /api/memos/{memo_id}` | success |
-| `DELETE /api/memos/{memo_id}` | success |
-| `GET /api/tags` | success |
-| `POST /api/tags` | success |
-| `PATCH /api/tags/{tag_id}` | success |
-| `DELETE /api/tags/{tag_id}` | success |
-| `POST /api/tags/link` | success |
-| `DELETE /api/tags/link` | success |
-| `GET /api/tags/links` | success |
-| `GET /api/trades/{trade_id}/news` | success |
-| `POST /api/trades/{trade_id}/news` | success |
-| `DELETE /api/trades/{trade_id}/news/{news_id}` | success |
-| `GET /api/news/{news_id}/trades` | success |
+| `GET /api/dashboard/summary` | 200 |
+| `portfolio_summary` included | success |
+| `holding_summary` included | success |
+| `top_holdings` included | success |
+| `recent_trades` included | success |
+| `recent_news` included | success |
+| `recent_alert_histories` included | success |
+| `memo_summary` included | success |
 | `python -m compileall backend/app` | success |
 | `npm run build` | success |
-| Regression API | all 200 on verification run |
+| Regression API | all 200 |
 
 ## Confirmation-needed items
 
-- Item: stock page memo / tag UI was not expanded in this task
-- Related document: `docs/CODEX_TASK_1.13.md`
-- Reason: the task explicitly allowed stock page work to remain minimal if trade / news coverage was prioritized
-- Possible options: add stock detail memo / tag UI later, or keep stock target handling API-only
-- Recommendation: keep current scope and add stock page support only if the next task requires it
-- Current implementation status: deferred
+- Item: live DB currently has no holdings, trades, memos, or tags in the verified environment
+- Related document: `docs/CODEX_TASK_1.14.md`
+- Reason: dashboard empty-state rendering was verified against actual zero-data sections
+- Possible options: keep zero-state handling as-is, or populate sample data in a separate verification task
+- Recommendation: keep current behavior and validate richer dashboard contents when portfolio data exists
+- Current implementation status: complete for current data state
 
 - Item: some existing stock / news names are still broken in DB encoding
 - Related document: `docs/DEVELOPMENT_REPORT.md`
-- Reason: verification data inherited mojibake from existing live DB rows
-- Possible options: separate master-data cleanup, or keep current behavior until source data is normalized
-- Recommendation: handle encoding cleanup as a separate maintenance task
+- Reason: recent news and alert history titles inherit existing mojibake from stored source data
+- Possible options: separate source-data cleanup, or accept current display until normalization work is scheduled
+- Recommendation: separate encoding cleanup from dashboard work
 - Current implementation status: deferred
 
 ## Next step suggestions
 
-- Add stock detail memo / tag UI only if the next task needs stock-side workflow parity
-- Separate existing DB text encoding cleanup from feature work
+- Re-run dashboard verification after real holdings / trades / memos accumulate
+- Separate text encoding cleanup for existing news and stock master data

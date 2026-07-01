@@ -2,97 +2,81 @@
 
 ## Work overview
 
-- Latest completed scope: `docs/CODEX_TASK_1.13.md`
-- Implemented memo / tag CRUD and trade-news link management within the existing MVP schema
-- Prior `1.11` and `1.12` trade, holdings, and alert work remains intact
+- Latest completed scope: `docs/CODEX_TASK_1.14.md`
+- Implemented dashboard summary API and connected the dashboard page to live backend data
+- Prior `1.13` memo / tag / trade-news work remains intact
 
 ## Reference documents
 
-- `docs/CODEX_TASK_1.13.md`
+- `docs/CODEX_TASK_1.14.md`
 - `docs/INVESTMENT_SYSTEM_PLAN_v1.2.md`
 - `docs/MVP_DB_SCHEMA_v1.2.md`
 
 ## Completed work
 
-- Added `GET /api/memos`
-- Added `POST /api/memos`
-- Added `GET /api/memos/{memo_id}`
-- Added `PATCH /api/memos/{memo_id}`
-- Added `DELETE /api/memos/{memo_id}`
-- Added `GET /api/tags`
-- Added `POST /api/tags`
-- Added `PATCH /api/tags/{tag_id}`
-- Added `DELETE /api/tags/{tag_id}`
-- Added `POST /api/tags/link`
-- Added `DELETE /api/tags/link`
-- Added `GET /api/tags/links`
-- Added `GET /api/trades/{trade_id}/news`
-- Added `POST /api/trades/{trade_id}/news`
-- Added `DELETE /api/trades/{trade_id}/news/{news_id}`
-- Added `GET /api/news/{news_id}/trades`
-- Added trade page drawer support for memo / tag / related news management
-- Added news page drawer support for related trade / memo / tag management
-- Fixed `DELETE /api/tags/link` route matching issue discovered during verification
+- Added `GET /api/dashboard/summary`
+- Added dashboard backend aggregation for:
+  - `portfolio_summary`
+  - `holding_summary`
+  - `top_holdings`
+  - `top_gainers`
+  - `top_losers`
+  - `recent_trades`
+  - `recent_news`
+  - `recent_alert_histories`
+  - `price_alert_summary`
+  - `news_alert_summary`
+  - `memo_summary`
+- Replaced dashboard frontend placeholder with:
+  - KPI cards
+  - portfolio summary card
+  - top holdings table
+  - gainers / losers lists
+  - recent trades table
+  - recent news table
+  - recent alert history list
+  - recent memo list
+  - top tags display
+  - quick navigation buttons
 
 ## Generated files
 
-- `docs/CODEX_TASK_1.13_REPORT.md`
-- `docs/MEMO_TAG_TRADE_NEWS_REPORT.md`
+- `docs/CODEX_TASK_1.14_REPORT.md`
+- `docs/DASHBOARD_REPORT.md`
 
 ## Modified files
 
-- `backend/app/domains/memos/repository.py`
-- `backend/app/domains/memos/router.py`
-- `backend/app/domains/memos/schemas.py`
-- `backend/app/domains/memos/service.py`
-- `backend/app/domains/news/router.py`
-- `backend/app/domains/trades/repository.py`
-- `backend/app/domains/trades/router.py`
-- `backend/app/domains/trades/schemas.py`
-- `backend/app/domains/trades/service.py`
-- `backend/app/domains/tags/__init__.py`
-- `backend/app/domains/tags/models.py`
-- `backend/app/domains/tags/repository.py`
-- `backend/app/domains/tags/router.py`
-- `backend/app/domains/tags/schemas.py`
-- `backend/app/domains/tags/service.py`
+- `backend/app/domains/dashboard/__init__.py`
+- `backend/app/domains/dashboard/repository.py`
+- `backend/app/domains/dashboard/router.py`
+- `backend/app/domains/dashboard/schemas.py`
+- `backend/app/domains/dashboard/service.py`
 - `backend/app/main.py`
-- `frontend/src/pages/main/memos/service/memos.api.ts`
-- `frontend/src/pages/main/memos/service/memos.types.ts`
-- `frontend/src/pages/main/news/NewsPage.vue`
-- `frontend/src/pages/main/news/service/news.api.ts`
-- `frontend/src/pages/main/news/service/news.types.ts`
-- `frontend/src/pages/main/trades/TradesPage.vue`
-- `frontend/src/pages/main/trades/service/trades.api.ts`
-- `frontend/src/pages/main/trades/service/trades.types.ts`
+- `frontend/src/pages/main/dashboard/DashboardPage.vue`
+- `frontend/src/pages/main/dashboard/service/dashboard.api.ts`
+- `frontend/src/pages/main/dashboard/service/dashboard.types.ts`
+- `frontend/src/pages/main/dashboard/service/dashboard.utils.ts`
 - `docs/CODEX_PROGRESS.md`
 
 ## Backend implementation result
 
-- Memo target validation is enforced for `stock`, `trade`, `news`, and `general`
-- Tag target validation is enforced for `stock`, `trade`, `news`, and `memo`
-- Trade-news links now support create, list, and unlink flows from both sides
-- `tags` router is registered under `/api/tags`
-- Route ordering for `DELETE /api/tags/link` was corrected so the link endpoint is no longer shadowed by `/{tag_id}`
+- Dashboard API is exposed at `/api/dashboard/summary`
+- Existing summary logic is reused from portfolio, holdings, price-alert, and news domains
+- Dashboard-specific repository queries were added only for list-style sections
+- No dashboard-only persistence was introduced
 
 ## Frontend implementation result
 
-- Trade page now supports:
-  - trade memo create / update / delete
-  - trade tag create / link / unlink
-  - related news search / link / unlink
-- News page now supports:
-  - related trade link / unlink
-  - news memo create / update / delete
-  - news tag create / link / unlink
-- No stock page memo / tag UI was added in this task
+- Dashboard page now uses live API data instead of scaffold placeholders
+- Empty-state sections render cleanly when holdings, trades, memos, or tags are absent
+- Quick buttons navigate to trades, portfolio, news, alerts, and charts
 
 ## DB implementation result
 
 - No new table created
 - No migration created
 - Existing schema only used
-- Used existing tables: `memos`, `tags`, `tag_links`, `trade_news_links`, `trades`, `news`, `stocks`
+- Used existing tables: `holdings`, `trades`, `stocks`, `news`, `price_alerts`, `alert_histories`, `memos`, `tags`, `tag_links`
 
 ## Execution method
 
@@ -109,21 +93,29 @@ npm run dev -- --host 127.0.0.1 --port 5173
 Open:
 
 ```text
-http://localhost:5173/trades
-http://localhost:5173/news
+http://localhost:5173/dashboard
 ```
 
 ## Test result
 
 - `python -m compileall backend/app`: success
 - `npm run build`: success
-- Verification run used a copied `backend/stock_analyze.db` file to avoid changing the live DB
-- Memo CRUD validation: success
-- Tag CRUD validation: success
-- `tag_links` link / unlink validation: success
-- `trade_news_links` link / unlink validation: success
-- Trade page related APIs: success
-- News page related APIs: success
+- `/api/dashboard/summary`: 200
+- `portfolio_summary` included: success
+- `holding_summary` included: success
+- `top_holdings` included: success
+- `recent_trades` included: success
+- `recent_news` included: success
+- `recent_alert_histories` included: success
+- `memo_summary` included: success
+- Dashboard verification snapshot on live DB:
+  - `top_holdings_count`: `0`
+  - `recent_trades_count`: `0`
+  - `recent_news_count`: `5`
+  - `recent_alert_histories_count`: `2`
+  - `recent_memos_count`: `0`
+  - `top_tags_count`: `0`
+  - `portfolio_total_asset_value`: `0`
 - Regression checks:
   - `/health`: 200
   - `/api/auth/status`: 200
@@ -131,25 +123,22 @@ http://localhost:5173/news
   - `/api/portfolio/summary`: 200
   - `/api/price-alerts/summary`: 200
   - `/api/news/alerts/send/dry-run`: 200
-- Verification summary on copied live DB:
-  - `total_price_rows`: `352427`
-  - `latest_price_date`: `2025-06-24`
-  - `duplicate_groups`: `null`
 
 ## Incomplete items
 
-- Stock page memo / tag UI was not expanded
+- None within the instructed scope
 
 ## Confirmation-needed items
 
-- Some existing stock / news names are already broken in DB encoding, so verification responses inherited that text
+- Live DB currently has no holdings, trades, memos, or tags in the verified environment, so several dashboard sections are empty by data state
+- Some existing stock / news names are already broken in DB encoding, so recent news and alert history text inherits that issue
 
 ## Next step suggestions
 
-- Add stock detail memo / tag UI only if a follow-up task requires stock-side workflow parity
-- Separate DB text encoding cleanup from feature work
+- Re-run dashboard verification once live holdings / trades / memos exist
+- Separate source-data text normalization from dashboard work
 
 ## Final completion statement
 
-거래-뉴스 연결, 메모, 태그 구조 작업 완료했습니다.
+대시보드 / 투자 리포트 화면 작업 완료했습니다.
 DEVELOPMENT_REPORT.md를 확인해 주세요.
