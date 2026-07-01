@@ -2,69 +2,76 @@
 
 ## Current phase
 
-- Phase: scheduled job runner and manual job execution UI
-- Task document: `docs/CODEX_TASK_1.15.md`
-- Status: implementation and verification complete
+- Phase: MVP integration verification and issue cleanup
+- Task document: `docs/CODEX_TASK_1.16.md`
+- Status: verification and reporting complete
 
 ## Completed major work
 
-- Added `jobs` backend domain
-- Added `GET /api/jobs`
-- Added `GET /api/jobs/{job_id}`
-- Added `POST /api/jobs/{job_id}/run`
-- Added `POST /api/jobs/run`
-- Added `GET /api/jobs/summary`
-- Added supported job types:
-  - `krx_price_daily`
-  - `krx_price_range`
-  - `naver_news_collect`
-  - `gpt_news_summary`
-  - `gpt_news_filter`
-  - `news_alert_candidate`
-  - `news_alert_send`
-  - `price_alert_evaluate`
-- Reused existing prices, news, GPT, and alert services through job runner dispatch
-- Recorded job run status and messages into `system_logs`
-- Derived `last_status` and `last_message` from job logs because `scheduled_jobs` has no dedicated columns
-- Updated settings page with job list, recent status, and run buttons
-- Added job summary card to dashboard
-- Backend compile passed
-- Frontend build passed
+- Re-checked core backend APIs across auth, settings, jobs, stocks, prices, charts, news, alerts, funds, trades, holdings, portfolio, memos, tags, and dashboard
+- Re-checked frontend route entry points for:
+  - `/dashboard`
+  - `/stocks`
+  - `/collection`
+  - `/news`
+  - `/portfolio`
+  - `/trades`
+  - `/alerts`
+  - `/charts`
+  - `/memos`
+  - `/settings`
+- Confirmed backend compile passed
+- Confirmed frontend production build passed
+- Confirmed Alembic head state is `20260624_0002`
+- Confirmed MVP table set remains 27 tables with no extra table added
+- Confirmed `stock_prices` duplicate groups remain `0` for `stock_id + date + timeframe`
+- Confirmed `trade_news_links` and `tag_links` orphan count remains `0`
+- Confirmed current live DB summary state:
+  - `total_price_rows`: `352427`
+  - `latest_price_date`: `2025-06-24`
+  - `latest_updated_stocks_count`: `2757`
+  - `total_news_count`: `18`
+  - `alert_history_count`: `2`
+- Added `docs/MVP_INTEGRATION_CHECK_REPORT.md`
+- Added `docs/CODEX_TASK_1.16_REPORT.md`
 
 ## Verification result
 
 | Item | Result |
 |---|---|
-| `GET /api/jobs` | 200 |
-| `GET /api/jobs/{job_id}` | 200 |
-| `GET /api/jobs/summary` | 200 |
-| `POST /api/jobs/{job_id}/run` | success |
-| `POST /api/jobs/run` | success |
-| `krx_price_daily` dry-run | success |
-| `naver_news_collect` manual run | success |
-| `news_alert_candidate` manual run | success |
-| `price_alert_evaluate` dry-run | success |
-| `python -m compileall backend/app` | success |
+| `python -m alembic current` | `20260624_0002 (head)` |
+| `python -m compileall app` | success |
 | `npm run build` | success |
-| Regression API | all 200 |
+| Core regression APIs | all 200 |
+| Frontend route entry checks | all 200 |
+| MVP expected tables | 27 / 27 |
+| Extra tables | 0 |
+| `stock_prices` duplicate groups | 0 |
+| `price_alerts` rows | 0 |
+| `alert_histories` rows | 2 |
+| `trades` rows | 0 |
+| `holdings` rows | 0 |
+| `fund_transactions` rows | 0 |
+| `tag_links` orphan rows | 0 |
+| `trade_news_links` orphan rows | 0 |
 
 ## Confirmation-needed items
 
-- Item: `scheduled_jobs` has no `last_status` or `last_message` columns
-- Related document: `docs/CODEX_TASK_1.15.md`
-- Reason: task asked to expose those values, but current schema only stores `last_run_at` and `next_run_at`
-- Possible options: derive from `system_logs`, or add schema fields later
-- Recommendation: keep current derived approach and avoid schema change in MVP
-- Current implementation status: derived from `system_logs`
+- Item: browser-based visual inspection was not available in the current Codex session
+- Related document: `docs/CODEX_TASK_1.16.md`
+- Reason: no interactive browser instance was attached for localhost verification
+- Possible options: accept route-level verification plus build result now, or repeat a manual visual pass later in VS Code/browser
+- Recommendation: treat the current run as integration-level validation and do a short visual sanity pass only if UI regressions are suspected later
+- Current implementation status: route response and build verified, no code change made
 
-- Item: OpenAI quota failure was not reproduced during this verification run
-- Related document: `docs/CODEX_TASK_1.15.md`
-- Reason: current `gpt_news_summary` run completed without quota error
-- Possible options: accept implementation review only, or reproduce later in a constrained environment
-- Recommendation: keep the exception-to-failed logging path and re-check only if a real quota incident occurs
-- Current implementation status: failure path implemented, quota-specific incident not reproduced
+- Item: some Korean text had previously appeared mojibake in tool output, but the simple DB replacement-character query returned `0`
+- Related document: `docs/CODEX_TASK_1.16.md`
+- Reason: console encoding and stored text issues are not fully distinguishable from the current non-browser validation path
+- Possible options: inspect representative records directly in UI, or run a focused encoding cleanup task later if the issue is reproduced
+- Recommendation: keep this as a follow-up verification item rather than changing data blindly
+- Current implementation status: no data mutation performed in this task
 
 ## Next step suggestions
 
-- If needed later, add dedicated job edit fields for run-specific config presets in the settings UI
-- Re-check GPT failure logging when a real quota or upstream API failure occurs
+- If the next task needs true end-user validation, run a short browser-based manual pass for dashboard, charts, alerts, and settings pages
+- If text encoding issues are reproduced in UI, isolate whether they originate from source ingestion, DB storage, or terminal rendering before editing live data

@@ -2,84 +2,120 @@
 
 ## Work overview
 
-- Latest completed scope: `docs/CODEX_TASK_1.15.md`
-- Implemented scheduled job runner APIs and settings-page job management UI
-- Prior dashboard, memo/tag, and alert work remains intact
+- Latest completed scope: `docs/CODEX_TASK_1.16.md`
+- Scope handled in this task: MVP integration verification, regression check, DB consistency check, and documentation cleanup
+- Constraint kept:
+  - no new feature
+  - no new table
+  - no new migration
+  - existing MVP schema only
 
 ## Reference documents
 
-- `docs/CODEX_TASK_1.15.md`
+- `docs/CODEX_TASK_1.16.md`
 - `docs/INVESTMENT_SYSTEM_PLAN_v1.2.md`
 - `docs/MVP_DB_SCHEMA_v1.2.md`
 
 ## Completed work
 
-- Added `GET /api/jobs`
-- Added `GET /api/jobs/{job_id}`
-- Added `POST /api/jobs/{job_id}/run`
-- Added `POST /api/jobs/run`
-- Added `GET /api/jobs/summary`
-- Added job runner support for:
-  - `krx_price_daily`
-  - `krx_price_range`
-  - `naver_news_collect`
-  - `gpt_news_summary`
-  - `gpt_news_filter`
-  - `news_alert_candidate`
-  - `news_alert_send`
-  - `price_alert_evaluate`
-- Added `system_logs`-based status tracking for job runs
-- Updated default scheduled job seed definitions
-- Updated settings page to show:
-  - job list
-  - enabled state
-  - last status
-  - last run timestamp
-  - last message
-  - run buttons
-  - recent run history
-- Added job summary card to dashboard page
+- Re-checked core backend APIs:
+  - `/health`
+  - `/api/auth/status`
+  - `/api/settings`
+  - `/api/jobs`
+  - `/api/jobs/summary`
+  - `/api/stocks`
+  - `/api/collection/stocks/summary`
+  - `/api/prices/summary`
+  - `/api/prices/markets/KOSPI/latest?limit=3`
+  - `/api/prices/markets/KOSDAQ/latest?limit=3`
+  - `/api/charts/stocks/2/ohlcv?limit=130`
+  - `/api/news`
+  - `/api/news/summary`
+  - `/api/news/gpt/targets`
+  - `/api/news/gpt/status`
+  - `/api/news/alerts/summary`
+  - `/api/news/alerts/send/dry-run`
+  - `/api/price-alerts`
+  - `/api/price-alerts/summary`
+  - `/api/price-alerts/evaluate/dry-run`
+  - `/api/funds/summary`
+  - `/api/trades`
+  - `/api/holdings/summary`
+  - `/api/portfolio/summary`
+  - `/api/memos`
+  - `/api/tags`
+  - `/api/dashboard/summary`
+- Re-checked frontend route entry points:
+  - `/dashboard`
+  - `/stocks`
+  - `/collection`
+  - `/news`
+  - `/portfolio`
+  - `/trades`
+  - `/alerts`
+  - `/charts`
+  - `/memos`
+  - `/settings`
+- Re-checked Alembic current revision and MVP table set
+- Re-checked duplicate and orphan-link status in live SQLite DB
+- Added task report and MVP integration report documents
 
 ## Generated files
 
-- `docs/CODEX_TASK_1.15_REPORT.md`
-- `docs/SCHEDULED_JOB_REPORT.md`
+- `docs/CODEX_TASK_1.16_REPORT.md`
+- `docs/MVP_INTEGRATION_CHECK_REPORT.md`
 
 ## Modified files
 
-- `backend/app/db/init_db.py`
-- `backend/app/domains/jobs/__init__.py`
-- `backend/app/domains/jobs/repository.py`
-- `backend/app/domains/jobs/router.py`
-- `backend/app/domains/jobs/schemas.py`
-- `backend/app/domains/jobs/service.py`
-- `backend/app/main.py`
-- `frontend/src/pages/main/dashboard/DashboardPage.vue`
-- `frontend/src/pages/main/settings/SettingsPage.vue`
-- `frontend/src/pages/main/settings/service/settings.api.ts`
-- `frontend/src/pages/main/settings/service/settings.types.ts`
 - `docs/CODEX_PROGRESS.md`
+- `docs/DEVELOPMENT_REPORT.md`
 
 ## Backend implementation result
 
-- Jobs API is exposed at `/api/jobs`
-- Supported job rows are ensured in `scheduled_jobs` without adding new tables
-- Legacy seed rows are ignored in jobs API when a newer supported key already exists
-- `last_status` and `last_message` are derived from `system_logs` because the table has no dedicated columns
-- Job execution is synchronous manual runner scope only; no OS cron or background daemon was added
+- No backend code change was added in this task
+- Core regression APIs responded successfully in the current live DB environment
+- Jobs integration remains connected through:
+  - `/api/jobs`
+  - `/api/jobs/summary`
+  - dashboard summary
+- Current API summary values:
+  - `jobs.total_count`: `8`
+  - `jobs.enabled_count`: `8`
+  - `jobs.failed_count`: `0`
+  - `prices.total_price_rows`: `352427`
+  - `prices.latest_price_date`: `2025-06-24`
+  - `prices.latest_updated_stocks_count`: `2757`
+  - `news.total_news_count`: `18`
+  - `news.alert_target_count`: `2`
+  - `price_alerts.total_count`: `0`
+  - `funds.active_pool_count`: `0`
+  - `holdings.holding_count`: `0`
 
 ## Frontend implementation result
 
-- Settings page now serves as the manual job runner UI
-- Dashboard page now shows current job summary counts
-- Loading, error, and recent-result states are handled for the jobs section
+- No frontend code change was added in this task
+- Frontend dev server responded for all major MVP route entry points
+- Production build completed successfully
+- Verification method for this task was route entry response plus build/regression confirmation, not a full visual browser walk-through
 
 ## DB implementation result
 
 - No new table created
 - No migration created
 - Existing schema only used
-- Used existing tables: `scheduled_jobs`, `system_logs`, `stock_prices`, `news_collect_jobs`, `news_collect_job_items`, `news`, `price_alerts`, `alert_histories`
+- `python -m alembic current`: `20260624_0002 (head)`
+- MVP expected tables: `27`
+- Actual non-system tables: `27`
+- Extra tables: none
+- `stock_prices` duplicate groups on `stock_id + date + timeframe`: `0`
+- `price_alerts` rows: `0`
+- `alert_histories` rows: `2`
+- `trades` rows: `0`
+- `holdings` rows: `0`
+- `fund_transactions` rows: `0`
+- `tag_links` orphan rows: `0`
+- `trade_news_links` orphan rows: `0`
 
 ## Execution method
 
@@ -96,53 +132,52 @@ npm run dev -- --host 127.0.0.1 --port 5173
 Open:
 
 ```text
-http://localhost:5173/settings
-http://localhost:5173/dashboard
+http://127.0.0.1:5173/dashboard
+http://127.0.0.1:5173/stocks
+http://127.0.0.1:5173/collection
+http://127.0.0.1:5173/news
+http://127.0.0.1:5173/portfolio
+http://127.0.0.1:5173/trades
+http://127.0.0.1:5173/alerts
+http://127.0.0.1:5173/charts
+http://127.0.0.1:5173/memos
+http://127.0.0.1:5173/settings
 ```
 
 ## Test result
 
-- `python -m compileall backend/app`: success
+- `python -m alembic current`: success
+- `python -m compileall app`: success
 - `npm run build`: success
-- `/api/jobs`: 200
-- `/api/jobs/{job_id}`: 200
+- Regression API checks: all 200
+- Frontend route entry checks: all 200
 - `/api/jobs/summary`: 200
-- `krx_price_daily` dry-run: success
-  - `bas_date`: `20250624`
-  - `fetched_count`: `2757`
-- `naver_news_collect` manual run: success
-  - `new_count`: `1`
-  - `duplicate_count`: `2`
-- `news_alert_candidate` manual run: success
-  - `processed_count`: `18`
-- `price_alert_evaluate` dry-run: success
-  - `evaluated_count`: `0`
-- `POST /api/jobs/run` batch run: success
-- `gpt_news_summary` run returned success in current environment, so quota failure was not reproduced
-- Regression checks:
-  - `/health`: 200
-  - `/api/auth/status`: 200
-  - `/api/prices/summary`: 200
-  - `/api/dashboard/summary`: 200
-  - `/api/portfolio/summary`: 200
-  - `/api/price-alerts/summary`: 200
-  - `/api/news/alerts/send/dry-run`: 200
+- `/api/prices/summary`: 200
+- `/api/news/summary`: 200
+- `/api/price-alerts/summary`: 200
+- `/api/funds/summary`: 200
+- `/api/holdings/summary`: 200
+- `/api/portfolio/summary`: 200
+- `/api/dashboard/summary`: 200
+- DB duplicate check: success
+- DB orphan-link check: success
 
 ## Incomplete items
 
-- OpenAI quota failure was not reproduced in this run, so quota-specific failed log output was not observed directly
+- Full browser-driven visual inspection was not performed in this session
+- OpenAI upstream failure scenarios were not re-exercised in this task because 1.16 scope was validation and cleanup only
 
 ## Confirmation-needed items
 
-- `scheduled_jobs` has no `last_status` or `last_message` columns, so those fields are currently derived from `system_logs`
-- Existing legacy scheduled job rows remain in the table, but unsupported duplicates are hidden from the jobs API
+- Browser-based visual inspection should be repeated later if route-level success and build output are not enough for release confidence
+- Some Korean text had previously appeared mojibake in tool output, but this task did not reproduce a definitive DB-side broken-text case
 
 ## Next step suggestions
 
-- Add dedicated per-job config editing UI only if the next task requires richer manual overrides
-- Re-check GPT failed-job logging when an actual upstream quota or provider error occurs
+- If desired, perform a short manual UI sanity pass in a real browser for dashboard, charts, alerts, and settings pages
+- If mojibake is reproduced in UI, inspect ingestion source, DB storage, and response encoding separately before mutating data
 
 ## Final completion statement
 
-수동 수집 / scheduled_jobs 기반 실행 구조 작업 완료했습니다.
-DEVELOPMENT_REPORT.md를 확인해 주세요.
+MVP integration verification and issue cleanup work is complete.
+Please check `DEVELOPMENT_REPORT.md`.
