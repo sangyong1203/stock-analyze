@@ -4,29 +4,34 @@ from app.db.models import AlertSetting, AppSetting, CollectionRule, NewsKeywordS
 
 
 DEFAULT_APP_SETTINGS = [
-    ("news_collect_start_time", "07:30", "string", "뉴스 수집 시작 시간"),
-    ("news_collect_end_time", "23:30", "string", "뉴스 수집 종료 시간"),
-    ("news_collect_interval_minutes", "60", "integer", "뉴스 수집 주기"),
-    ("news_duplicate_window_market_hours", "24", "integer", "일반 뉴스 중복 체크 기간"),
-    ("news_duplicate_window_event_hours", "72", "integer", "이벤트 뉴스 중복 체크 기간"),
-    ("news_gpt_summary_min_score", "6", "integer", "GPT mini 요약 최소 점수"),
-    ("news_min_duplicate_for_summary", "2", "integer", "요약 대상 중복 보도 최소 횟수"),
-    ("news_min_source_for_summary", "2", "integer", "요약 대상 언론사 최소 수"),
-    ("news_alert_min_score", "7", "integer", "뉴스 알림 최소 중요도"),
-    ("news_alert_min_duplicate_count", "3", "integer", "뉴스 알림 최소 중복 횟수"),
-    ("gmail_daily_limit", "200", "integer", "Gmail 일일 발송 한도"),
-    ("gmail_hourly_limit", "50", "integer", "Gmail 시간당 발송 한도"),
+    ("news_collect_start_time", "07:30", "string", "News collect start time"),
+    ("news_collect_end_time", "23:30", "string", "News collect end time"),
+    ("news_collect_interval_minutes", "60", "integer", "News collect interval minutes"),
+    ("news_duplicate_window_market_hours", "24", "integer", "Market news duplicate window"),
+    ("news_duplicate_window_event_hours", "72", "integer", "Event news duplicate window"),
+    ("news_gpt_summary_min_score", "6", "integer", "GPT summary min score"),
+    ("news_min_duplicate_for_summary", "2", "integer", "GPT summary min duplicate count"),
+    ("news_min_source_for_summary", "2", "integer", "GPT summary min source count"),
+    ("news_alert_min_score", "7", "integer", "News alert min score"),
+    ("news_alert_min_duplicate_count", "3", "integer", "News alert min duplicate count"),
+    ("gmail_daily_limit", "200", "integer", "Gmail daily send limit"),
+    ("gmail_hourly_limit", "50", "integer", "Gmail hourly send limit"),
 ]
 
 DEFAULT_JOBS = [
-    ("news_collect", "뉴스 수집", "interval", {"start": "07:30", "end": "23:30", "minutes": 60}),
-    ("index_constituents_update", "구성종목 업데이트", "monthly", {"day": 1}),
-    ("krx_price_update", "KRX 가격 수집", "daily", {"after_market_close": True}),
+    ("krx_price_daily", "KRX Daily Price Collect", "manual", {"markets": ["KOSPI", "KOSDAQ"], "dry_run": True}),
+    ("krx_price_range", "KRX Range Price Collect", "manual", {"markets": ["KOSPI", "KOSDAQ"], "dry_run": True, "skip_empty": True}),
+    ("naver_news_collect", "Naver News Collect", "manual", {"pages": 1, "max_items": 10}),
+    ("gpt_news_summary", "GPT News Summary", "manual", {"limit": 5, "dry_run": True}),
+    ("gpt_news_filter", "GPT News Filter", "manual", {"limit": 5, "dry_run": True}),
+    ("news_alert_candidate", "News Alert Candidate Recalculate", "manual", {}),
+    ("news_alert_send", "News Alert Send", "manual", {"limit": 10, "force": False, "dry_run": True}),
+    ("price_alert_evaluate", "Price Alert Evaluate", "manual", {"limit": 10, "force": False, "dry_run": True}),
 ]
 
 DEFAULT_KEYWORDS = [
-    ("market", "코스피", 1),
-    ("market", "코스닥", 1),
+    ("market", "KOSPI", 1),
+    ("market", "KOSDAQ", 1),
     ("macro", "금리", 2),
     ("policy", "정책", 2),
     ("event", "실적", 5),
@@ -38,7 +43,7 @@ DEFAULT_KEYWORDS = [
 
 DEFAULT_COLLECTION_RULES = [
     ("KODEX 200 포함 종목", "index_member", {"index_code": "KODEX_200"}, 10),
-    ("KODEX 코스닥150 포함 종목", "index_member", {"index_code": "KODEX_KOSDAQ_150"}, 20),
+    ("KODEX 코스닥 150 포함 종목", "index_member", {"index_code": "KODEX_KOSDAQ_150"}, 20),
     ("관심종목 포함", "favorite", {"is_favorite": True}, 30),
     ("보유종목 포함", "holding", {"is_holding": True}, 40),
     ("알림 설정 종목 포함", "alert", {"has_price_alert": True}, 50),
@@ -56,10 +61,14 @@ def seed_defaults(db: Session) -> None:
             db.add(ScheduledJob(job_key=key, job_name=name, schedule_type=schedule_type, config_json=config))
 
     for group_type, keyword, weight in DEFAULT_KEYWORDS:
-        exists = db.query(NewsKeywordSetting).filter(
-            NewsKeywordSetting.group_type == group_type,
-            NewsKeywordSetting.keyword == keyword,
-        ).first()
+        exists = (
+            db.query(NewsKeywordSetting)
+            .filter(
+                NewsKeywordSetting.group_type == group_type,
+                NewsKeywordSetting.keyword == keyword,
+            )
+            .first()
+        )
         if not exists:
             db.add(NewsKeywordSetting(group_type=group_type, keyword=keyword, weight=weight, is_default=True))
 
@@ -71,13 +80,15 @@ def seed_defaults(db: Session) -> None:
             rule.priority = priority
             rule.enabled = True
         else:
-            db.add(CollectionRule(
-                name=name,
-                rule_type=rule_type,
-                enabled=True,
-                condition_json=condition_json,
-                priority=priority,
-            ))
+            db.add(
+                CollectionRule(
+                    name=name,
+                    rule_type=rule_type,
+                    enabled=True,
+                    condition_json=condition_json,
+                    priority=priority,
+                )
+            )
 
     if not db.query(AlertSetting).first():
         db.add(AlertSetting())

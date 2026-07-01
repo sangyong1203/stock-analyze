@@ -1,6 +1,6 @@
 import { apiRequest } from '@/shared/utils/http'
 
-import type { AlertSetting, AppSetting, NewsKeyword, ScheduledJob } from './settings.types'
+import type { AlertSetting, AppSetting, JobRunResult, JobSummary, NewsKeyword, ScheduledJob } from './settings.types'
 
 export const settingsApi = {
   listUrl: '/api/settings/app-settings',
@@ -14,6 +14,13 @@ export const settingsApi = {
   updateScheduledJob: (id: number, payload: Partial<ScheduledJob>) =>
     apiRequest<ScheduledJob>(`/api/settings/scheduled-jobs/${id}`, {
       method: 'PUT',
+      body: JSON.stringify(payload),
+    }),
+  listJobs: () => apiRequest<ScheduledJob[]>('/api/jobs'),
+  jobSummary: () => apiRequest<JobSummary>('/api/jobs/summary'),
+  runJob: (id: number, payload: { dry_run?: boolean | null; config_json?: Record<string, unknown> | null } = {}) =>
+    apiRequest<JobRunResult>(`/api/jobs/${id}/run`, {
+      method: 'POST',
       body: JSON.stringify(payload),
     }),
   listNewsKeywords: () => apiRequest<NewsKeyword[]>('/api/settings/news-keywords'),

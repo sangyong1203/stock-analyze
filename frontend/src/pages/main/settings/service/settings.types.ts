@@ -18,8 +18,32 @@ export interface ScheduledJob {
   config_json?: Record<string, unknown> | null
   last_run_at?: string | null
   next_run_at?: string | null
+  last_status?: string | null
+  last_message?: string | null
+  last_started_at?: string | null
+  last_finished_at?: string | null
   created_at: string
   updated_at: string
+}
+
+export interface JobRunResult {
+  job_id: number
+  job_key: string
+  status: string
+  started_at: string
+  finished_at: string
+  message: string
+  result: Record<string, unknown>
+}
+
+export interface JobSummary {
+  total_count: number
+  enabled_count: number
+  disabled_count: number
+  success_count: number
+  failed_count: number
+  never_run_count: number
+  recent_runs: JobRunResult[]
 }
 
 export interface NewsKeyword {

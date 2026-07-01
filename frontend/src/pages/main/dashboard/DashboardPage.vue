@@ -56,6 +56,33 @@
       </div>
 
       <div class="dashboard-grid">
+        <section class="panel">
+          <div class="panel-head">
+            <div>
+              <h2>작업 상태</h2>
+              <p class="muted">최근 수동 실행 작업 요약입니다.</p>
+            </div>
+          </div>
+          <ul class="simple-list compact">
+            <li>
+              <span>활성 작업</span>
+              <strong>{{ jobSummary?.enabled_count ?? 0 }}</strong>
+            </li>
+            <li>
+              <span>성공</span>
+              <strong>{{ jobSummary?.success_count ?? 0 }}</strong>
+            </li>
+            <li>
+              <span>실패</span>
+              <strong>{{ jobSummary?.failed_count ?? 0 }}</strong>
+            </li>
+            <li>
+              <span>미실행</span>
+              <strong>{{ jobSummary?.never_run_count ?? 0 }}</strong>
+            </li>
+          </ul>
+        </section>
+
         <section class="panel span-2">
           <div class="panel-head">
             <div>
@@ -278,6 +305,9 @@ import { ElMessage } from 'element-plus'
 import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
+import { settingsApi } from '@/pages/main/settings/service/settings.api'
+import type { JobSummary } from '@/pages/main/settings/service/settings.types'
+
 import { dashboardApi } from './service/dashboard.api'
 import type { DashboardSummary } from './service/dashboard.types'
 import { formatDateTime, formatKrw, formatPercent, formatSignedKrw, toNumber } from './service/dashboard.utils'
@@ -286,6 +316,7 @@ const router = useRouter()
 const loading = ref(false)
 const errorMessage = ref('')
 const summary = ref<DashboardSummary | null>(null)
+const jobSummary = ref<JobSummary | null>(null)
 
 function toneClass(value: string | number | null | undefined) {
   const numeric = toNumber(value)
@@ -310,7 +341,9 @@ async function loadSummary() {
   loading.value = true
   errorMessage.value = ''
   try {
-    summary.value = await dashboardApi.summary()
+    const [dashboardSummary, jobsSummary] = await Promise.all([dashboardApi.summary(), settingsApi.jobSummary()])
+    summary.value = dashboardSummary
+    jobSummary.value = jobsSummary
   } catch (error) {
     errorMessage.value = error instanceof Error ? error.message : '대시보드 정보를 불러오지 못했습니다.'
     ElMessage.error('대시보드 로딩에 실패했습니다.')

@@ -6,16 +6,16 @@
         <strong>{{ appSettings.length }}</strong>
       </article>
       <article class="kpi-item">
-        <span>스케줄 작업</span>
-        <strong>{{ scheduledJobs.length }}</strong>
+        <span>작업 수</span>
+        <strong>{{ jobSummary?.total_count ?? scheduledJobs.length }}</strong>
       </article>
       <article class="kpi-item">
-        <span>뉴스 키워드</span>
-        <strong>{{ newsKeywords.length }}</strong>
+        <span>활성 작업</span>
+        <strong>{{ jobSummary?.enabled_count ?? 0 }}</strong>
       </article>
       <article class="kpi-item">
-        <span>알림 설정</span>
-        <strong>{{ alertSettings.length }}</strong>
+        <span>실패 작업</span>
+        <strong>{{ jobSummary?.failed_count ?? 0 }}</strong>
       </article>
     </div>
 
@@ -23,7 +23,7 @@
       <div class="panel-head">
         <div>
           <h2 class="section-title">시스템 설정</h2>
-          <p class="muted">수집 시간, 중복 기준, GPT 요약 기준, 알림 기준을 관리합니다.</p>
+          <p class="muted">수집, 알림, 키워드, 수동 실행 작업 상태를 관리합니다.</p>
         </div>
         <el-button :loading="loading" @click="loadSettings">새로고침</el-button>
       </div>
@@ -44,22 +44,63 @@
           </el-table>
         </el-tab-pane>
 
-        <el-tab-pane label="스케줄" name="jobs">
+        <el-tab-pane label="수동 작업" name="jobs">
+          <div class="jobs-summary" v-if="jobSummary">
+            <el-tag type="info" effect="plain">전체 {{ jobSummary.total_count }}</el-tag>
+            <el-tag type="success" effect="plain">성공 {{ jobSummary.success_count }}</el-tag>
+            <el-tag type="danger" effect="plain">실패 {{ jobSummary.failed_count }}</el-tag>
+            <el-tag effect="plain">미실행 {{ jobSummary.never_run_count }}</el-tag>
+          </div>
+
           <el-table :data="scheduledJobs" border>
-            <el-table-column prop="job_key" label="작업 키" min-width="180" />
+            <el-table-column prop="job_key" label="작업 키" min-width="170" />
             <el-table-column prop="job_name" label="작업명" min-width="180" />
-            <el-table-column label="사용" width="100">
+            <el-table-column label="사용" width="90">
               <template #default="{ row }">
                 <el-switch v-model="row.enabled" @change="saveScheduledJob(row)" />
               </template>
             </el-table-column>
-            <el-table-column prop="schedule_type" label="스케줄 유형" width="140" />
-            <el-table-column label="설정 JSON" min-width="260">
+            <el-table-column prop="schedule_type" label="유형" width="100" />
+            <el-table-column label="최근 상태" width="110">
               <template #default="{ row }">
-                <code>{{ row.config_json ?? {} }}</code>
+                <el-tag :type="statusTagType(row.last_status)" effect="plain">{{ row.last_status || 'never' }}</el-tag>
+              </template>
+            </el-table-column>
+            <el-table-column label="최근 실행" min-width="150">
+              <template #default="{ row }">{{ formatDateTime(row.last_run_at) }}</template>
+            </el-table-column>
+            <el-table-column label="메시지" min-width="220" show-overflow-tooltip>
+              <template #default="{ row }">{{ row.last_message || '-' }}</template>
+            </el-table-column>
+            <el-table-column label="설정 JSON" min-width="240">
+              <template #default="{ row }">
+                <code>{{ prettyConfig(row.config_json) }}</code>
+              </template>
+            </el-table-column>
+            <el-table-column label="실행" width="170" fixed="right">
+              <template #default="{ row }">
+                <div class="action-row">
+                  <el-button size="small" :loading="runningJobId === row.id" @click="runJob(row, true)">dry-run</el-button>
+                  <el-button size="small" type="primary" :loading="runningJobId === row.id" @click="runJob(row, false)">실행</el-button>
+                </div>
               </template>
             </el-table-column>
           </el-table>
+
+          <div v-if="jobSummary?.recent_runs.length" class="recent-runs">
+            <h3>최근 실행 결과</h3>
+            <el-table :data="jobSummary?.recent_runs ?? []" size="small" border>
+              <el-table-column prop="job_key" label="작업" min-width="150" />
+              <el-table-column prop="status" label="상태" width="100" />
+              <el-table-column label="시작" min-width="150">
+                <template #default="{ row }">{{ formatDateTime(row.started_at) }}</template>
+              </el-table-column>
+              <el-table-column label="종료" min-width="150">
+                <template #default="{ row }">{{ formatDateTime(row.finished_at) }}</template>
+              </el-table-column>
+              <el-table-column prop="message" label="메시지" min-width="240" show-overflow-tooltip />
+            </el-table>
+          </div>
         </el-tab-pane>
 
         <el-tab-pane label="뉴스 키워드" name="keywords">
@@ -146,15 +187,17 @@ import { ElMessage } from 'element-plus'
 import { onMounted, reactive, ref } from 'vue'
 
 import { settingsApi } from './service/settings.api'
-import type { AlertSetting, AppSetting, NewsKeyword, ScheduledJob } from './service/settings.types'
+import type { AlertSetting, AppSetting, JobSummary, NewsKeyword, ScheduledJob } from './service/settings.types'
 
 const activeTab = ref('app')
 const loading = ref(false)
 const errorMessage = ref('')
+const runningJobId = ref<number | null>(null)
 const appSettings = ref<AppSetting[]>([])
 const scheduledJobs = ref<ScheduledJob[]>([])
 const newsKeywords = ref<NewsKeyword[]>([])
 const alertSettings = ref<AlertSetting[]>([])
+const jobSummary = ref<JobSummary | null>(null)
 
 const keywordGroups = ['market', 'sector', 'macro', 'policy', 'exclude', 'event']
 const keywordDraft = reactive({
@@ -165,20 +208,39 @@ const keywordDraft = reactive({
   is_default: false,
 })
 
+function formatDateTime(value: string | null | undefined) {
+  if (!value) return '-'
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return value
+  return date.toLocaleString('ko-KR')
+}
+
+function prettyConfig(value: Record<string, unknown> | null | undefined) {
+  return JSON.stringify(value ?? {}, null, 2)
+}
+
+function statusTagType(status: string | null | undefined) {
+  if (status === 'success') return 'success'
+  if (status === 'failed') return 'danger'
+  return 'info'
+}
+
 async function loadSettings() {
   loading.value = true
   errorMessage.value = ''
   try {
-    const [app, jobs, keywords, alerts] = await Promise.all([
+    const [app, jobs, keywords, alerts, jobsSummary] = await Promise.all([
       settingsApi.listAppSettings(),
-      settingsApi.listScheduledJobs(),
+      settingsApi.listJobs(),
       settingsApi.listNewsKeywords(),
       settingsApi.listAlertSettings(),
+      settingsApi.jobSummary(),
     ])
     appSettings.value = app
     scheduledJobs.value = jobs
     newsKeywords.value = keywords
     alertSettings.value = alerts
+    jobSummary.value = jobsSummary
   } catch (error) {
     errorMessage.value = error instanceof Error ? error.message : '설정을 불러오지 못했습니다.'
   } finally {
@@ -203,12 +265,25 @@ async function saveScheduledJob(row: ScheduledJob) {
     cron_expression: row.cron_expression,
     config_json: row.config_json,
   })
-  ElMessage.success('스케줄 설정을 저장했습니다.')
+  ElMessage.success('작업 설정을 저장했습니다.')
+}
+
+async function runJob(row: ScheduledJob, dryRun: boolean) {
+  runningJobId.value = row.id
+  try {
+    const result = await settingsApi.runJob(row.id, { dry_run: dryRun })
+    ElMessage.success(`${result.job_key}: ${result.message}`)
+    await loadSettings()
+  } catch (error) {
+    ElMessage.error(error instanceof Error ? error.message : '작업 실행에 실패했습니다.')
+  } finally {
+    runningJobId.value = null
+  }
 }
 
 async function createKeyword() {
   if (!keywordDraft.keyword.trim()) {
-    ElMessage.warning('키워드를 입력하세요.')
+    ElMessage.warning('키워드를 입력해 주세요.')
     return
   }
   await settingsApi.createNewsKeyword({ ...keywordDraft, keyword: keywordDraft.keyword.trim() })
@@ -300,11 +375,32 @@ onMounted(loadSettings)
   margin: 6px 0 0;
 }
 
+.jobs-summary {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.recent-runs {
+  margin-top: 16px;
+}
+
+.recent-runs h3 {
+  margin: 0 0 10px;
+  font-size: 15px;
+}
+
 .keyword-form {
   display: grid;
   grid-template-columns: 150px minmax(160px, 1fr) 130px auto;
   gap: 10px;
   margin-bottom: 12px;
+}
+
+.action-row {
+  display: flex;
+  gap: 6px;
 }
 
 code {
