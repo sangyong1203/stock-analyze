@@ -2,13 +2,24 @@
 
 ## Current phase
 
-- Phase: MVP integration verification and issue cleanup
-- Task document: `docs/CODEX_TASK_1.16.md`
-- Status: verification and reporting complete
+- Phase: MVP manual QA, sample data consistency check, and encoding verification
+- Task document: `docs/CODEX_TASK_1.17.md`
+- Status: verification, cleanup, and reporting complete
 
 ## Completed major work
 
-- Re-checked core backend APIs across auth, settings, jobs, stocks, prices, charts, news, alerts, funds, trades, holdings, portfolio, memos, tags, and dashboard
+- Attempted browser-based localhost QA through the available browser runtime path
+- Confirmed no browser instance was attached in the current Codex session, so true visual automation could not proceed
+- Re-checked backend health and major MVP APIs:
+  - `/health`
+  - `/api/auth/status`
+  - `/api/dashboard/summary`
+  - `/api/stocks`
+  - `/api/news`
+  - `/api/prices/summary`
+  - `/api/portfolio/summary`
+  - `/api/price-alerts/summary`
+  - `/api/jobs/summary`
 - Re-checked frontend route entry points for:
   - `/dashboard`
   - `/stocks`
@@ -20,58 +31,68 @@
   - `/charts`
   - `/memos`
   - `/settings`
+- Executed sample data QA flow on live DB:
+  - created test fund pool
+  - inserted deposit
+  - inserted Samsung Electronics buy trade
+  - verified holdings and portfolio summary update
+  - created price alert
+  - verified price-alert dry-run
+  - executed non-sending evaluate path that recorded a skipped history
+  - created trade memo
+  - created trade tag and link
+  - created trade-news link
+  - verified dashboard recent trade, memo, and alert reflection
+  - cleaned all test data
+- Confirmed cleanup restored summary state back to the baseline
+- Confirmed API-visible Korean text was readable in tested stock, news, alert, dashboard, trade, and alert surfaces
 - Confirmed backend compile passed
 - Confirmed frontend production build passed
-- Confirmed Alembic head state is `20260624_0002`
-- Confirmed MVP table set remains 27 tables with no extra table added
-- Confirmed `stock_prices` duplicate groups remain `0` for `stock_id + date + timeframe`
-- Confirmed `trade_news_links` and `tag_links` orphan count remains `0`
-- Confirmed current live DB summary state:
-  - `total_price_rows`: `352427`
-  - `latest_price_date`: `2025-06-24`
-  - `latest_updated_stocks_count`: `2757`
-  - `total_news_count`: `18`
-  - `alert_history_count`: `2`
-- Added `docs/MVP_INTEGRATION_CHECK_REPORT.md`
-- Added `docs/CODEX_TASK_1.16_REPORT.md`
+- Added `docs/MVP_MANUAL_QA_REPORT.md`
+- Added `docs/CODEX_TASK_1.17_REPORT.md`
 
 ## Verification result
 
 | Item | Result |
 |---|---|
-| `python -m alembic current` | `20260624_0002 (head)` |
+| Browser runtime selection | no browser available in session |
 | `python -m compileall app` | success |
 | `npm run build` | success |
-| Core regression APIs | all 200 |
+| Major regression APIs | all 200 |
 | Frontend route entry checks | all 200 |
-| MVP expected tables | 27 / 27 |
-| Extra tables | 0 |
-| `stock_prices` duplicate groups | 0 |
-| `price_alerts` rows | 0 |
-| `alert_histories` rows | 2 |
-| `trades` rows | 0 |
-| `holdings` rows | 0 |
-| `fund_transactions` rows | 0 |
-| `tag_links` orphan rows | 0 |
-| `trade_news_links` orphan rows | 0 |
+| Sample fund pool create | success |
+| Sample deposit create | success |
+| Sample buy trade create | success |
+| Holdings summary after buy | `holding_count = 1` |
+| Portfolio summary after buy | reflected |
+| Price alert create | success |
+| Price alert dry-run | success |
+| Price alert evaluate without send | skipped history recorded |
+| Trade memo create | success |
+| Trade tag link create | success |
+| Trade-news link create | success |
+| Dashboard recent trade reflection | success |
+| Dashboard recent memo reflection | success |
+| Dashboard recent alert reflection | success |
+| Test data cleanup | success |
 
 ## Confirmation-needed items
 
-- Item: browser-based visual inspection was not available in the current Codex session
-- Related document: `docs/CODEX_TASK_1.16.md`
-- Reason: no interactive browser instance was attached for localhost verification
-- Possible options: accept route-level verification plus build result now, or repeat a manual visual pass later in VS Code/browser
-- Recommendation: treat the current run as integration-level validation and do a short visual sanity pass only if UI regressions are suspected later
-- Current implementation status: route response and build verified, no code change made
+- Item: true browser-based visual inspection could not be completed in this session
+- Related document: `docs/CODEX_TASK_1.17.md`
+- Reason: browser runtime returned `No browser is available`
+- Possible options: repeat manual UI pass later in a real browser, or accept the current route/API-level QA for this task
+- Recommendation: treat this run as data-flow and integration QA, then perform a short human visual pass in VS Code or an external browser if visual confidence is required
+- Current implementation status: no code change made for this limitation
 
-- Item: some Korean text had previously appeared mojibake in tool output, but the simple DB replacement-character query returned `0`
-- Related document: `docs/CODEX_TASK_1.16.md`
-- Reason: console encoding and stored text issues are not fully distinguishable from the current non-browser validation path
-- Possible options: inspect representative records directly in UI, or run a focused encoding cleanup task later if the issue is reproduced
-- Recommendation: keep this as a follow-up verification item rather than changing data blindly
-- Current implementation status: no data mutation performed in this task
+- Item: sample encoding checks were clean on API and DB-visible paths, but frontend render-level mojibake still was not visually observed in a live browser
+- Related document: `docs/CODEX_TASK_1.17.md`
+- Reason: no browser instance was attached for final UI confirmation
+- Possible options: re-open the app manually and confirm stocks/news/alerts/dashboard text rendering, or keep the current API-level conclusion
+- Recommendation: keep as a follow-up visual confirmation item only if mojibake is later reproduced
+- Current implementation status: no encoding fix applied because the issue was not reproduced in validated data paths
 
 ## Next step suggestions
 
-- If the next task needs true end-user validation, run a short browser-based manual pass for dashboard, charts, alerts, and settings pages
-- If text encoding issues are reproduced in UI, isolate whether they originate from source ingestion, DB storage, or terminal rendering before editing live data
+- Run a short manual browser pass for dashboard, news, trades, alerts, and settings pages if UI-level release confidence is needed
+- If mojibake is reproduced later, isolate source ingestion, DB storage, API response encoding, and frontend rendering before changing live data
