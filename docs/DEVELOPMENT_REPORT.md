@@ -2,35 +2,24 @@
 
 ## Work overview
 
-- Latest completed scope: `docs/CODEX_TASK_1.17.md`
-- Scope handled in this task: MVP manual QA, sample data flow verification, encoding check, cleanup verification, and documentation update
+- Latest completed scope: `docs/CODEX_TASK_1.18.md`
+- Scope handled in this task: Codex in-app browser 기반 MVP 화면 QA, local browser/API integration fix, regression verification, and report update
 - Constraint kept:
   - no new feature
   - no new table
   - no new migration
-  - existing MVP schema only
+  - no actual Gmail send
 
 ## Reference documents
 
-- `docs/CODEX_TASK_1.17.md`
+- `docs/CODEX_TASK_1.18.md`
 - `docs/INVESTMENT_SYSTEM_PLAN_v1.2.md`
 - `docs/MVP_DB_SCHEMA_v1.2.md`
 
 ## Completed work
 
-- Attempted browser-based localhost QA using the available browser runtime path
-- Confirmed that no browser instance was available in the current Codex session
-- Re-checked major backend APIs:
-  - `/health`
-  - `/api/auth/status`
-  - `/api/dashboard/summary`
-  - `/api/stocks`
-  - `/api/news`
-  - `/api/prices/summary`
-  - `/api/portfolio/summary`
-  - `/api/price-alerts/summary`
-  - `/api/jobs/summary`
-- Re-checked frontend route entry points:
+- Started backend and frontend locally for in-app browser QA
+- Visited and checked these routes in the browser:
   - `/dashboard`
   - `/stocks`
   - `/collection`
@@ -41,94 +30,80 @@
   - `/charts`
   - `/memos`
   - `/settings`
-- Executed sample data QA flow on live DB:
-  - created test fund pool
-  - created deposit
-  - created Samsung Electronics buy trade
-  - verified holdings summary update
-  - verified portfolio summary update
-  - created one price alert
-  - verified price-alert dry-run
-  - executed non-sending evaluate path and recorded one skipped alert history
-  - created one trade memo
-  - created one trade tag and link
-  - created one trade-news link
-  - verified dashboard recent trade, memo, and alert reflection
-  - cleaned test data
-- Re-checked post-cleanup summary values to confirm baseline restoration
-- Re-checked API-visible Korean text across stock, news, alert, dashboard, and trade-related responses
-- Added task report and manual QA report documents
+- Confirmed on major routes:
+  - page entry works
+  - headings render
+  - loading state resolves
+  - empty state is shown where data is absent
+  - visible Korean text is readable in tested screens
+- Verified detailed target screens:
+  - dashboard KPI cards, recent news, recent alerts, quick navigation
+  - charts period filters and MA/RSI/MACD toggles
+  - alerts form, summary cards, dry-run controls, histories table
+  - portfolio summary cards, fund forms, holdings empty state
+  - trades warning state, trade form, empty list state
+  - news detail drawer
+  - settings manual jobs tab
+- Identified CORS mismatch during browser QA:
+  - frontend accessed `http://127.0.0.1:5173`
+  - backend only allowed `http://localhost:5173`
+  - preflight `OPTIONS` requests failed before the fix
+- Updated backend CORS handling to support both local origins
+- Identified and fixed empty select placeholder regression where `0` appeared before selection on:
+  - alerts
+  - portfolio
+  - trades
+- Re-ran backend compile
+- Re-ran frontend production build
+- Re-ran major regression APIs
+- Added browser QA reports
 
 ## Generated files
 
-- `docs/CODEX_TASK_1.17_REPORT.md`
-- `docs/MVP_MANUAL_QA_REPORT.md`
+- `docs/MVP_BROWSER_QA_REPORT.md`
+- `docs/CODEX_TASK_1.18_REPORT.md`
 
 ## Modified files
 
+- `backend/app/core/config.py`
+- `backend/app/main.py`
+- `frontend/src/pages/main/alerts/AlertsPage.vue`
+- `frontend/src/pages/main/alerts/service/alerts.types.ts`
+- `frontend/src/pages/main/portfolio/PortfolioPage.vue`
+- `frontend/src/pages/main/portfolio/service/portfolio.types.ts`
+- `frontend/src/pages/main/trades/TradesPage.vue`
+- `frontend/src/pages/main/trades/service/trades.types.ts`
 - `docs/CODEX_PROGRESS.md`
 - `docs/DEVELOPMENT_REPORT.md`
 
 ## Backend implementation result
 
-- No backend code change was added in this task
-- Major regression APIs responded successfully in the current live DB environment
-- Sample data flow verified these connected areas:
-  - funds
-  - trades
-  - holdings
-  - portfolio summary
-  - price alerts
-  - alert histories
-  - memos
-  - tags
-  - trade-news links
-  - dashboard summary
-- Sample QA values during the run:
-  - sample stock: `삼성전자 (005930)`
-  - deposit amount: `1000000`
-  - buy trade quantity: `2`
-  - buy trade price: `60500`
-  - buy trade total amount: `121100`
-  - post-buy cash: `878900`
-  - post-buy holding count: `1`
-  - post-buy market value: `121000`
-  - post-buy unrealized profit/loss: `-100`
-  - sample price alert type: `TARGET_PRICE_ABOVE`
-  - sample price alert target: `160500`
-  - evaluate result: skipped with `condition_not_met`
+- Added multi-origin local CORS parsing for browser QA compatibility
+- Supported local dev origins:
+  - `http://localhost:5173`
+  - `http://127.0.0.1:5173`
+- Preserved legacy `allowed_origin` compatibility while introducing comma-separated `allowed_origins`
+- After the fix:
+  - dashboard summary loaded in browser
+  - no major route loading failures remained
+  - major regression APIs returned 200
 
 ## Frontend implementation result
 
-- No frontend code change was added in this task
-- Frontend dev server responded successfully for all major route entry points
+- Browser QA completed in the Codex in-app browser
+- No application console errors were observed on checked routes after the CORS fix
+- No loading-failed network entries remained on checked routes after the fix
+- Vite dev client debug logs still appeared on some routes, but they were not application errors
+- Fixed placeholder behavior for empty select fields by replacing sentinel `0` defaults with `null`
 - Production build completed successfully
-- Browser runtime was not available in this Codex session, so visual layout review could not be automated here
-- Current frontend verification level for this task was:
-  - route entry response
-  - API-backed data flow verification
-  - production build result
 
 ## DB implementation result
 
-- No new table created
-- No migration created
-- Existing schema only used
-- Sample QA data was inserted and then removed successfully
-- Post-cleanup summary values returned to baseline:
-  - `funds.active_pool_count`: `0`
-  - `funds.total_cash`: `0`
-  - `holdings.holding_count`: `0`
-  - `portfolio.total_asset_value`: `0`
-  - `price_alerts.total_count`: `0`
-- API-visible encoding samples showed no replacement character in checked values:
-  - `stocks.name`
-  - `news.title`
-  - `news.source`
-  - `alert_histories.title`
-  - `dashboard.recent_news.title`
-  - `dashboard.recent_trades.stock_name`
-  - `price_alerts.stock_name`
+- No schema change
+- No new table
+- No migration
+- Existing MVP schema only
+- No test data creation required for this task
 
 ## Execution method
 
@@ -146,54 +121,46 @@ Open:
 
 ```text
 http://127.0.0.1:5173/dashboard
-http://127.0.0.1:5173/stocks
-http://127.0.0.1:5173/collection
-http://127.0.0.1:5173/news
-http://127.0.0.1:5173/portfolio
-http://127.0.0.1:5173/trades
-http://127.0.0.1:5173/alerts
-http://127.0.0.1:5173/charts
-http://127.0.0.1:5173/memos
-http://127.0.0.1:5173/settings
 ```
 
 ## Test result
 
+- In-app browser route QA: success
+- Dashboard visual QA: success
+- Charts interaction QA: success
+- Alerts page render QA: success
+- Portfolio page render QA: success
+- Trades page render QA: success
+- News drawer QA: success
+- Settings manual jobs tab QA: success
+- Major route loading failure check after CORS fix: none
+- Application console error check after CORS fix: none
 - `python -m compileall app`: success
 - `npm run build`: success
-- Major regression APIs: all 200
-- Frontend route entry checks: all 200
-- Sample fund pool create: success
-- Sample deposit create: success
-- Sample buy trade create: success
-- Holdings summary after buy: success
-- Portfolio summary after buy: success
-- Price alert create: success
-- Price alert dry-run: success
-- Price alert evaluate without send: success
-- Trade memo create: success
-- Trade tag link create: success
-- Trade-news link create: success
-- Dashboard recent trade reflection: success
-- Dashboard recent memo reflection: success
-- Dashboard recent alert reflection: success
-- Test data cleanup: success
+- Regression APIs:
+  - `/health`: 200
+  - `/api/auth/status`: 200
+  - `/api/dashboard/summary`: 200
+  - `/api/prices/summary`: 200
+  - `/api/portfolio/summary`: 200
+  - `/api/price-alerts/summary`: 200
+  - `/api/jobs/summary`: 200
 
 ## Incomplete items
 
-- Full visual browser inspection was not completed because no browser instance was available in the session
+- None for the instructed QA scope
 
 ## Confirmation-needed items
 
-- A short manual browser pass is still needed if true UI-level release confidence is required
-- The mojibake concern was not reproduced in checked API and DB-visible paths, but final browser render confirmation was not available here
+- Frontend build emitted chunk-size warnings, but build success was confirmed
+- Bundle optimization should be handled as a separate task if needed
 
 ## Next step suggestions
 
-- Perform a short manual visual pass for dashboard, news, trades, alerts, and settings pages in a real browser
-- If mojibake is later reproduced, isolate source ingestion, DB storage, API response encoding, and frontend rendering before modifying data
+- Run a later performance-focused task if frontend bundle splitting becomes necessary
+- Keep future local browser QA compatible with both `localhost` and `127.0.0.1`
 
 ## Final completion statement
 
-MVP manual QA, data consistency, and encoding verification work is complete.
-Please check `DEVELOPMENT_REPORT.md`.
+MVP 브라우저 화면 QA 작업 완료했습니다.
+DEVELOPMENT_REPORT.md를 확인해 주세요.

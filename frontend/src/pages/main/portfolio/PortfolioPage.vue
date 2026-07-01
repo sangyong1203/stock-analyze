@@ -168,7 +168,7 @@ const poolForm = ref<FundPoolPayload>({
 })
 
 const transactionForm = ref<FundTransactionPayload>({
-  fund_pool_id: 0,
+  fund_pool_id: null,
   transaction_type: 'deposit',
   amount: 0,
   transaction_date: new Date().toISOString().slice(0, 10),

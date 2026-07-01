@@ -31,7 +31,7 @@ export interface PriceAlert {
 }
 
 export interface PriceAlertPayload {
-  stock_id: number
+  stock_id: number | null
   alert_type: PriceAlertType
   target_price?: number | null
   threshold_percent?: number | null
@@ -40,7 +40,7 @@ export interface PriceAlertPayload {
 }
 
 export interface PriceAlertUpdatePayload {
-  stock_id?: number
+  stock_id?: number | null
   alert_type?: PriceAlertType
   target_price?: number | null
   threshold_percent?: number | null

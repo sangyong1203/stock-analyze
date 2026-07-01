@@ -30,7 +30,7 @@ export interface FundTransaction {
 }
 
 export interface FundTransactionPayload {
-  fund_pool_id: number
+  fund_pool_id: number | null
   transaction_type: string
   amount: number
   currency?: string

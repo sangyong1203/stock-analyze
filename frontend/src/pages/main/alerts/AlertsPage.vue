@@ -265,7 +265,7 @@ const stockOptions = ref<StockOption[]>([])
 const evaluationResult = ref<PriceAlertEvaluationResult | null>(null)
 
 const form = reactive<PriceAlertPayload>({
-  stock_id: 0,
+  stock_id: null,
   alert_type: 'TARGET_PRICE_ABOVE',
   target_price: null,
   threshold_percent: null,
@@ -283,7 +283,7 @@ const isRangeAlert = computed(() => form.alert_type === 'DROP_FROM_HIGH' || form
 function resetForm() {
   editingAlertId.value = null
   Object.assign(form, {
-    stock_id: 0,
+    stock_id: null,
     alert_type: 'TARGET_PRICE_ABOVE',
     target_price: null,
     threshold_percent: null,

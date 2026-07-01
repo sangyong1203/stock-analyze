@@ -276,8 +276,8 @@ const tradeMemoForm = ref({
 })
 
 const form = ref<TradePayload>({
-  fund_pool_id: 0,
-  stock_id: 0,
+  fund_pool_id: null,
+  stock_id: null,
   trade_type: 'buy',
   trade_date: new Date().toISOString().slice(0, 10),
   quantity: 1,
@@ -291,8 +291,8 @@ const form = ref<TradePayload>({
 function resetForm() {
   editingTradeId.value = null
   form.value = {
-    fund_pool_id: fundPools.value[0]?.id ?? 0,
-    stock_id: 0,
+    fund_pool_id: fundPools.value[0]?.id ?? null,
+    stock_id: null,
     trade_type: 'buy',
     trade_date: new Date().toISOString().slice(0, 10),
     quantity: 1,

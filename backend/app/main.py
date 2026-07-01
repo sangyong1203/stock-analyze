@@ -22,9 +22,12 @@ from app.domains.trades.router import router as trades_router
 
 def create_app() -> FastAPI:
     app = FastAPI(title=settings.app_name)
+    allowed_origins = [origin.strip() for origin in settings.allowed_origins.split(",") if origin.strip()]
+    if settings.allowed_origin and settings.allowed_origin not in allowed_origins:
+        allowed_origins.append(settings.allowed_origin)
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=[settings.allowed_origin],
+        allow_origins=allowed_origins,
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],

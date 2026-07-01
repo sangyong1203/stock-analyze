@@ -43,8 +43,8 @@ export interface TradeNewsLinkPayload {
 }
 
 export interface TradePayload {
-  fund_pool_id: number
-  stock_id: number
+  fund_pool_id: number | null
+  stock_id: number | null
   trade_type: TradeType
   trade_date: string
   quantity: number
