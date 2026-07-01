@@ -2,100 +2,76 @@
 
 ## Work overview
 
-- Latest completed scope: `docs/CODEX_TASK_1.18.md`
-- Scope handled in this task: Codex in-app browser 기반 MVP 화면 QA, local browser/API integration fix, regression verification, and report update
+- Latest completed scope: `docs/CODEX_TASK_1.19.md`
+- Scope handled in this task: MVP phase-1 completion wrap-up, document conflict cleanup, operation checklist summary, and follow-up prioritization
 - Constraint kept:
   - no new feature
+  - no code change
   - no new table
   - no new migration
-  - no actual Gmail send
 
 ## Reference documents
 
-- `docs/CODEX_TASK_1.18.md`
+- `docs/CODEX_TASK_1.19.md`
 - `docs/INVESTMENT_SYSTEM_PLAN_v1.2.md`
 - `docs/MVP_DB_SCHEMA_v1.2.md`
+- `docs/MVP_INTEGRATION_CHECK_REPORT.md`
+- `docs/MVP_BROWSER_QA_REPORT.md`
 
 ## Completed work
 
-- Started backend and frontend locally for in-app browser QA
-- Visited and checked these routes in the browser:
-  - `/dashboard`
-  - `/stocks`
-  - `/collection`
-  - `/news`
-  - `/portfolio`
-  - `/trades`
-  - `/alerts`
-  - `/charts`
-  - `/memos`
-  - `/settings`
-- Confirmed on major routes:
-  - page entry works
-  - headings render
-  - loading state resolves
-  - empty state is shown where data is absent
-  - visible Korean text is readable in tested screens
-- Verified detailed target screens:
-  - dashboard KPI cards, recent news, recent alerts, quick navigation
-  - charts period filters and MA/RSI/MACD toggles
-  - alerts form, summary cards, dry-run controls, histories table
-  - portfolio summary cards, fund forms, holdings empty state
-  - trades warning state, trade form, empty list state
-  - news detail drawer
-  - settings manual jobs tab
-- Identified CORS mismatch during browser QA:
-  - frontend accessed `http://127.0.0.1:5173`
-  - backend only allowed `http://localhost:5173`
-  - preflight `OPTIONS` requests failed before the fix
-- Updated backend CORS handling to support both local origins
-- Identified and fixed empty select placeholder regression where `0` appeared before selection on:
-  - alerts
-  - portfolio
-  - trades
-- Re-ran backend compile
-- Re-ran frontend production build
-- Re-ran major regression APIs
-- Added browser QA reports
+- Reviewed current MVP implementation and validation documents
+- Reorganized final MVP phase-1 status into one completion document
+- Added an operation checklist for live usage preparation
+- Separated:
+  - implemented and verified MVP items
+  - deferred items
+  - follow-up priorities
+- Cleaned stale or conflicting wording in the integration-level report
+- Reconfirmed minimal regression endpoints required by the task
 
 ## Generated files
 
-- `docs/MVP_BROWSER_QA_REPORT.md`
-- `docs/CODEX_TASK_1.18_REPORT.md`
+- `docs/MVP_COMPLETION_REPORT.md`
+- `docs/CODEX_TASK_1.19_REPORT.md`
 
 ## Modified files
 
-- `backend/app/core/config.py`
-- `backend/app/main.py`
-- `frontend/src/pages/main/alerts/AlertsPage.vue`
-- `frontend/src/pages/main/alerts/service/alerts.types.ts`
-- `frontend/src/pages/main/portfolio/PortfolioPage.vue`
-- `frontend/src/pages/main/portfolio/service/portfolio.types.ts`
-- `frontend/src/pages/main/trades/TradesPage.vue`
-- `frontend/src/pages/main/trades/service/trades.types.ts`
 - `docs/CODEX_PROGRESS.md`
 - `docs/DEVELOPMENT_REPORT.md`
+- `docs/MVP_INTEGRATION_CHECK_REPORT.md`
 
 ## Backend implementation result
 
-- Added multi-origin local CORS parsing for browser QA compatibility
-- Supported local dev origins:
-  - `http://localhost:5173`
-  - `http://127.0.0.1:5173`
-- Preserved legacy `allowed_origin` compatibility while introducing comma-separated `allowed_origins`
-- After the fix:
-  - dashboard summary loaded in browser
-  - no major route loading failures remained
-  - major regression APIs returned 200
+- No backend code change in this task
+- Current documented MVP backend scope includes:
+  - auth and app settings
+  - stocks and collection management
+  - KRX price collection
+  - charts with MA, RSI, and MACD
+  - Naver news collection
+  - GPT-backed news processing structure
+  - price alerts and news alerts
+  - funds, trades, holdings, and portfolio summary
+  - memos, tags, and trade-news links
+  - dashboard summary
+  - scheduled job runner
 
 ## Frontend implementation result
 
-- Browser QA completed in the Codex in-app browser
-- No application console errors were observed on checked routes after the CORS fix
-- No loading-failed network entries remained on checked routes after the fix
-- Vite dev client debug logs still appeared on some routes, but they were not application errors
-- Fixed placeholder behavior for empty select fields by replacing sentinel `0` defaults with `null`
-- Production build completed successfully
+- No frontend code change in this task
+- Current documented MVP frontend scope includes all major menu routes:
+  - dashboard
+  - stocks
+  - collection
+  - news
+  - portfolio
+  - trades
+  - alerts
+  - charts
+  - memos
+  - settings
+- Browser QA status remains documented in `docs/MVP_BROWSER_QA_REPORT.md`
 
 ## DB implementation result
 
@@ -103,64 +79,56 @@
 - No new table
 - No migration
 - Existing MVP schema only
-- No test data creation required for this task
+- MVP scope remains based on the confirmed 27-table structure
 
 ## Execution method
+
+Minimal regression verification used in this task:
 
 ```bash
 cd backend
 python -m uvicorn app.main:app --host 127.0.0.1 --port 8000
 ```
 
-```bash
-cd frontend
-npm run dev -- --host 127.0.0.1 --port 5173
-```
-
-Open:
+Checked:
 
 ```text
-http://127.0.0.1:5173/dashboard
+/health
+/api/auth/status
+/api/dashboard/summary
+/api/jobs/summary
+/api/prices/summary
 ```
 
 ## Test result
 
-- In-app browser route QA: success
-- Dashboard visual QA: success
-- Charts interaction QA: success
-- Alerts page render QA: success
-- Portfolio page render QA: success
-- Trades page render QA: success
-- News drawer QA: success
-- Settings manual jobs tab QA: success
-- Major route loading failure check after CORS fix: none
-- Application console error check after CORS fix: none
-- `python -m compileall app`: success
-- `npm run build`: success
-- Regression APIs:
-  - `/health`: 200
-  - `/api/auth/status`: 200
-  - `/api/dashboard/summary`: 200
-  - `/api/prices/summary`: 200
-  - `/api/portfolio/summary`: 200
-  - `/api/price-alerts/summary`: 200
-  - `/api/jobs/summary`: 200
+- Existing document conflict review: success
+- `docs/MVP_COMPLETION_REPORT.md` creation: success
+- `docs/CODEX_PROGRESS.md` update: success
+- `docs/DEVELOPMENT_REPORT.md` update: success
+- `docs/MVP_INTEGRATION_CHECK_REPORT.md` update: success
+- `/health`: 200
+- `/api/auth/status`: 200
+- `/api/dashboard/summary`: 200
+- `/api/jobs/summary`: 200
+- `/api/prices/summary`: 200
+- Feature addition check: none
+- New table or migration check: none
 
 ## Incomplete items
 
-- None for the instructed QA scope
+- None for the instructed documentation wrap-up scope
 
 ## Confirmation-needed items
 
-- Frontend build emitted chunk-size warnings, but build success was confirmed
-- Bundle optimization should be handled as a separate task if needed
+- Live credential readiness still depends on real environment checks for Gmail, OpenAI quota, and KRX auth configuration
 
 ## Next step suggestions
 
-- Run a later performance-focused task if frontend bundle splitting becomes necessary
-- Keep future local browser QA compatible with both `localhost` and `127.0.0.1`
+- Use `docs/MVP_COMPLETION_REPORT.md` as the baseline for any phase-2 planning
+- Keep deferred items separate from MVP completion status
 
 ## Final completion statement
 
-MVP 브라우저 화면 QA 작업 완료했습니다.
-DEVELOPMENT_REPORT.md를 확인해 주세요.
+MVP 1차 완료 정리 작업 완료했습니다.
+DEVELOPMENT_REPORT.md와 MVP_COMPLETION_REPORT.md를 확인해 주세요.
