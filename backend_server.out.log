@@ -1,0 +1,8 @@
+INFO:     127.0.0.1:63484 - "GET /api/auth/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63485 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58325 - "GET /api/auth/google/login HTTP/1.1" 302 Found
+INFO:     127.0.0.1:53733 - "GET /api/auth/google/callback?state=RlneY_TvmpD4TadG2RJ62PCnBb4d73CSCgWIjfLjLfw&iss=https%3A%2F%2Faccounts.google.com&code=4%2F0AdkVLPzR547StIJdkQneklHxPhOG6YzAUDezhnncVV0n2qM8MFcegVjcxdE-W3nxk5qLag&scope=email+profile+https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fuserinfo.profile+https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fuserinfo.email+openid&authuser=0&prompt=consent HTTP/1.1" 302 Found
+INFO:     127.0.0.1:53387 - "OPTIONS /api/dashboard/summary HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50167 - "OPTIONS /api/jobs/summary HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53387 - "GET /api/jobs/summary HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50167 - "GET /api/dashboard/summary HTTP/1.1" 200 OK

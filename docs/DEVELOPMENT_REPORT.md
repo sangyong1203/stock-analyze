@@ -2,102 +2,104 @@
 
 ## Work overview
 
-- Latest completed scope: `docs/CODEX_TASK_2.20A.md`
-- Scope handled in this task: verify Google OAuth `.env` configuration items and document the required user-entered values
+- Latest completed scope: `docs/CODEX_TASK_2.20B.md`
+- Scope handled in this task: Google OAuth live login verification and minimum auth flow fix
 - Constraint kept:
   - no real client secret output
-  - no real login test
+  - no real Gmail sending
   - no schema change
   - no migration
-  - no backend or frontend code change
 
 ## Reference documents
 
-- `docs/CODEX_TASK_2.20A.md`
+- `docs/CODEX_TASK_2.20B.md`
 - `docs/INVESTMENT_SYSTEM_PLAN_v1.2.md`
 - `docs/MVP_DB_SCHEMA_v1.2.md`
 
 ## Completed work
 
-- Verified the Google OAuth related environment variable names used in code
-- Verified the `.env` loading location and `.env.example` file location
-- Verified the auth readiness logic that checks Google OAuth configuration presence
-- Updated `backend/.env.example` to use placeholder values for the Google OAuth entries
-- Documented which values the user must enter manually in `backend/.env`
+- Restarted backend after reading the Google OAuth env-backed configuration
+- Verified `/api/auth/status` returns `oauth_configured=true` and `allowed_email_configured=true`
+- Verified Google login redirect URL and callback path are wired to `/api/auth/google/login` and `/api/auth/google/callback`
+- Replaced placeholder Google login backend flow with real OAuth redirect, callback, token exchange, userinfo fetch, allowed-email validation, and user upsert
+- Connected the frontend login button to the backend Google login endpoint
+- Fixed the callback runtime error caused by `Request` name collision between FastAPI and `urllib.request`
+- Executed the real browser login flow through Google consent
+- Confirmed successful redirect to `/dashboard?auth=success`
+- Confirmed dashboard screen and summary APIs load after login
 
 ## Generated files
 
-- `docs/CODEX_TASK_2.20A_REPORT.md`
+- `docs/CODEX_TASK_2.20B_REPORT.md`
 
 ## Modified files
 
-- `backend/.env.example`
+- `backend/app/domains/auth/repository.py`
+- `backend/app/domains/auth/router.py`
+- `backend/app/domains/auth/service.py`
+- `frontend/src/pages/login/LoginPage.vue`
 - `docs/CODEX_PROGRESS.md`
 - `docs/DEVELOPMENT_REPORT.md`
 
 ## Backend implementation result
 
-- No backend code change
-- Verified settings file:
-  - `backend/app/core/config.py`
-- Verified auth status logic:
-  - `backend/app/domains/auth/service.py`
-- Google OAuth related env names confirmed:
-  - `GOOGLE_CLIENT_ID`
-  - `GOOGLE_CLIENT_SECRET`
-  - `GOOGLE_ALLOWED_EMAIL`
+- Added live Google OAuth endpoints:
+  - `GET /api/auth/status`
+  - `GET /api/auth/google/login`
+  - `GET /api/auth/google/callback`
+- Added Google OAuth service flow using existing settings and existing `users` table
+- Verified callback success path stores or updates the allowed Google user
+- Verified callback redirect target is frontend dashboard URL
 
 ## Frontend implementation result
 
-- No frontend code change
+- Login page Google button now opens backend Google OAuth login endpoint
+- Successful OAuth callback returns the browser to `/dashboard?auth=success`
+- Dashboard route access and API loading were verified in browser
 
 ## DB implementation result
 
 - No schema change
 - No new table
 - No migration
+- Verified `users` table contains the logged-in Google account row after callback success
 
 ## Execution method
 
 Main verification:
 
 ```text
-Inspect backend/app/core/config.py
-Inspect backend/app/domains/auth/service.py
-Inspect backend/.env
-Inspect backend/.env.example
+Restart backend server
+GET /api/auth/status
+GET /api/auth/google/login
+Browser test: /login -> Google consent -> /api/auth/google/callback -> /dashboard?auth=success
+Inspect backend logs
+Check users table row in backend/stock_analyze.db
 ```
 
 ## Test result
 
-- Settings source confirmed:
-  - `SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")`
-- `.env` working location confirmed:
-  - `backend/.env`
-- `.env.example` confirmed:
-  - `backend/.env.example`
-- Auth readiness logic confirmed:
-  - `oauth_configured = bool(settings.google_client_id and settings.google_client_secret)`
-  - `allowed_email_configured = bool(settings.google_allowed_email)`
-- Placeholder `.env` format documented as:
-
-```text
-GOOGLE_CLIENT_ID=your-google-oauth-client-id.apps.googleusercontent.com
-GOOGLE_CLIENT_SECRET=your-google-oauth-client-secret
-GOOGLE_ALLOWED_EMAIL=your-google-account@example.com
-```
-
-- User must manually fill:
-  - Google OAuth client ID
-  - Google OAuth client secret
-  - allowed Google email for this personal MVP
-- Real client values were not printed in this task
-- Real login test was not executed in this task
+- Backend health check: passed
+- `/api/auth/status`: passed
+  - `oauth_configured = true`
+  - `allowed_email_configured = true`
+- Google login URL generation: passed
+- Callback path generation: passed
+- Browser login flow: passed
+  - login page opened at `http://localhost:5173/login`
+  - Google consent completed
+  - callback returned `302`
+  - final URL reached `http://localhost:5173/dashboard?auth=success`
+- Dashboard access after login: passed
+  - `GET /api/dashboard/summary` returned `200`
+  - `GET /api/jobs/summary` returned `200`
+- User persistence check: passed
+  - `users` row count: `1`
+- Gmail sending: not executed by task design
 
 ## Incomplete items
 
-- Real Google OAuth credentials still need manual input in `backend/.env`
-- Actual Google login verification is still pending by design
+- No frontend session persistence was implemented in this task
 
 ## Confirmation-needed items
 
@@ -105,11 +107,10 @@ GOOGLE_ALLOWED_EMAIL=your-google-account@example.com
 
 ## Next step suggestions
 
-- Enter the real Google OAuth values in `backend/.env`
-- Recheck `/api/auth/status` after credential input
-- Run actual login verification only in a separate explicit task
+- Add explicit frontend auth/session state only when a later task requires protected-route enforcement
+- If browser-specific callback blocking reappears, recheck local browser extensions before changing backend logic
 
 ## Final completion statement
 
-Google OAuth `.env` configuration item verification completed.
-Check `DEVELOPMENT_REPORT.md`.
+CODEX_TASK_2.20B Google OAuth 로그인 검증 완료했습니다.
+DEVELOPMENT_REPORT.md를 확인해 주세요.

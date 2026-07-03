@@ -2,61 +2,62 @@
 
 ## Current phase
 
-- Phase: Google OAuth environment variable verification
-- Task document: `docs/CODEX_TASK_2.20A.md`
-- Status: code-side env names, file locations, placeholder example values, and user-input-required items documented without exposing real secrets or running login
+- Phase: Google OAuth live login verification
+- Task document: `docs/CODEX_TASK_2.20B.md`
+- Status: backend OAuth flow connected, runtime callback error fixed, browser login and dashboard redirect verified
 
 ## Completed major work
 
 - Reviewed:
-  - `docs/CODEX_TASK_2.20A.md`
+  - `docs/CODEX_TASK_2.20B.md`
   - `docs/INVESTMENT_SYSTEM_PLAN_v1.2.md`
   - `docs/MVP_DB_SCHEMA_v1.2.md`
-- Verified Google OAuth related setting names from code:
-  - `GOOGLE_CLIENT_ID`
-  - `GOOGLE_CLIENT_SECRET`
-  - `GOOGLE_ALLOWED_EMAIL`
-- Verified settings source file:
-  - `backend/app/core/config.py`
-- Verified auth readiness logic:
-  - `backend/app/domains/auth/service.py`
-  - `oauth_configured` depends on both client ID and client secret
-  - `allowed_email_configured` depends on allowed email
-- Verified `.env` file locations:
-  - `backend/.env`
-  - `backend/.env.example`
-- Updated `backend/.env.example` Google OAuth entries to explicit placeholder format
+- Restarted backend with current `.env` configuration
+- Verified auth readiness endpoint:
+  - `oauth_configured = true`
+  - `allowed_email_configured = true`
+- Implemented and verified live OAuth routes:
+  - `/api/auth/status`
+  - `/api/auth/google/login`
+  - `/api/auth/google/callback`
+- Connected frontend login page button to backend Google login flow
+- Fixed callback failure caused by `fastapi.Request` and `urllib.request.Request` name collision
+- Completed real browser login flow through Google consent
+- Verified final redirect:
+  - `http://localhost:5173/dashboard?auth=success`
+- Verified post-login dashboard API loading:
+  - `/api/dashboard/summary`
+  - `/api/jobs/summary`
+- Verified allowed Google account row exists in `users`
 - Added:
-  - `docs/CODEX_TASK_2.20A_REPORT.md`
+  - `docs/CODEX_TASK_2.20B_REPORT.md`
 
 ## Verification result
 
 | Item | Result |
 |---|---|
-| Google OAuth env names found in code | yes |
-| `.env` location confirmed | `backend/.env` |
-| `.env.example` location confirmed | `backend/.env.example` |
-| Real client values printed | no |
-| Real login test executed | no |
+| Backend restarted | yes |
+| `/api/auth/status` ready flags | true / true |
+| Google login URL generated | yes |
+| Callback route responded successfully | yes |
+| Browser consent flow completed | yes |
+| `/dashboard` reached after login | yes |
+| Dashboard APIs loaded after login | yes |
+| Real Gmail sent | no |
 
 ## Current validated configuration notes
 
-- Required Google OAuth keys for this MVP:
-  - `GOOGLE_CLIENT_ID`
-  - `GOOGLE_CLIENT_SECRET`
-  - `GOOGLE_ALLOWED_EMAIL`
-- Placeholder format is now present in `backend/.env.example`
-- User still needs to enter the real Google OAuth values manually in `backend/.env`
+- Google OAuth env values are present in `backend/.env`
+- Real client values were not printed in logs or report text
+- Current callback route is:
+  - `http://127.0.0.1:8000/api/auth/google/callback`
+- Current frontend post-login route is:
+  - `http://localhost:5173/dashboard?auth=success`
 
 ## Confirmation-needed items
 
-- Item: actual Google OAuth login remains unverified
-- Reason: this task was limited to env item confirmation and documentation only
-- Recommendation: run login verification in a separate explicit task after real values are entered
-- Current implementation status: pending external credential input
+- None
 
 ## Next step suggestions
 
-- Fill the three Google OAuth values in `backend/.env`
-- After credential input, verify `/api/auth/status` again
-- Run actual login test only in a separate explicit task
+- Add durable frontend auth/session handling only when a later task explicitly requires route protection
