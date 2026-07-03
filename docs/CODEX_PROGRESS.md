@@ -2,65 +2,69 @@
 
 ## Current phase
 
-- Phase: news alert send policy hardening
-- Task document: `docs/CODEX_TASK_2.13.md`
-- Status: send candidate policy tightened, dry-run revalidated, no real send executed
+- Phase: GPT filter failure handling policy cleanup
+- Task document: `docs/CODEX_TASK_2.14.md`
+- Status: failed filter item reprocess path restored, sendable block revalidated, no real Gmail send executed
 
 ## Completed major work
 
 - Reviewed:
-  - `docs/CODEX_TASK_2.13.md`
+  - `docs/CODEX_TASK_2.14.md`
   - `docs/INVESTMENT_SYSTEM_PLAN_v1.2.md`
   - `docs/MVP_DB_SCHEMA_v1.2.md`
-- Confirmed the leakage point:
-  - `is_alert_target = true` news could enter send planning even when `gpt_filter_result = failed`
-  - unresolved GPT-filter state was therefore still reaching dry-run sendable output
-- Applied minimal backend fix only for send policy:
-  - `backend/app/domains/news/repository.py`
-  - `backend/app/domains/news/service.py`
-- Tightened send candidate policy to allow only:
-  - `gpt_filter_result = important`
-  - `gpt_filter_result = price_impact`
-- Added defensive skip handling in send planning for non-sendable GPT filter states
-- Restarted duplicated backend `uvicorn` processes and relaunched a single backend server on `127.0.0.1:8000`
-- Revalidated news alert dry-run after restart:
-  - before: `candidate_count = 3`, `sendable_count = 1`
-  - after: `candidate_count = 2`, `sendable_count = 0`
-- Reconfirmed `news_id = 3` remains visible in alert candidate review data but is no longer sendable because:
+- Confirmed current GPT state:
+  - `summary_failed_count = 0`
+  - `filter_failed_count = 1`
+- Confirmed the failed filter news:
+  - `news_id = 3`
   - `gpt_filter_result = failed`
-  - related stock links `0`
-  - broad market/policy article
-- Confirmed no real Gmail send endpoint was executed
+  - failure reason contains OpenAI quota `429 insufficient_quota`
+- Confirmed the policy gap:
+  - failed filter items were visible in review
+  - but existing `POST /api/news/gpt/filter/run` target selection only included `gpt_filter_result IS NULL`
+  - therefore failed items were not re-entering the normal reprocess queue
+- Applied minimal backend fix:
+  - `backend/app/domains/news/repository.py`
+  - filter target query now includes `gpt_filter_result = failed`
+  - filter pending count now reflects retryable failed items
+- Restarted backend server on `127.0.0.1:8000`
+- Revalidated with live API:
+  - filter dry-run target count changed from `16` to `17`
+  - failed `news_id = 3` now appears in filter dry-run items with `status = failed`
+- Reconfirmed failed filter items are still not sendable:
+  - news alert dry-run `sendable_count = 0`
+  - no real send executed
 - Added:
-  - `docs/NEWS_ALERT_POLICY_FIX_REPORT.md`
-  - `docs/CODEX_TASK_2.13_REPORT.md`
+  - `docs/GPT_FILTER_FAILURE_POLICY_REPORT.md`
+  - `docs/CODEX_TASK_2.14_REPORT.md`
 
 ## Verification result
 
 | Item | Result |
 |---|---|
+| `GET /api/news/gpt/targets` | 200 |
+| `GET /api/news/gpt/review?gpt_filter_result=failed` | 200 |
+| `POST /api/news/gpt/filter/run` dry-run | 200 |
 | `POST /api/news/alerts/send/dry-run` | 200 |
-| `GET /api/news/alerts/candidates` | 200 |
-| `GET /api/dashboard/summary` | 200 |
 | `python -m compileall app` | passed |
 | `npm run build` | passed |
 
-## Current validated alert state
+## Current validated GPT failure state
 
-- news-alert dry-run candidate items: `2`
-- news-alert dry-run sendable items: `0`
-- skipped reason `already_sent = 2`
-- news-alert history rows preserved: `2`
-- current-turn real sends executed: `0`
+- failed filter rows: `1`
+- failed filter review rows: `1`
+- filter dry-run target count: `17`
+- failed row included in reprocess dry-run: yes
+- news alert dry-run sendable count: `0`
 
 ## Confirmation-needed items
 
-- Item: whether broad market news without stock links should remain in alert candidate review lists
-- Reason: current task only tightened send policy, not alert target classification policy
-- Recommendation: keep such items reviewable but not sendable unless a later rule is explicitly confirmed
-- Current implementation status: send policy fixed, broader alert-target policy unchanged
+- Item: whether a real GPT filter rerun should be attempted later after OpenAI quota recovery
+- Reason: this task restored the queueing path only; actual retry execution was not forced because quota failure was already recorded
+- Recommendation: rerun manually later through the existing GPT filter run API after quota/billing is restored
+- Current implementation status: retry path restored, real retry not executed
 
 ## Next step suggestions
 
-- If needed later, split “alert candidate review list” policy from “real send” policy more explicitly in the UI copy
-- Keep real send limited to GPT-classified actionable items unless a wider market-alert policy is confirmed
+- Keep failed GPT filter rows for manual retry rather than deleting or manually rewriting them
+- Use existing filter run API after quota recovery and then re-check alert candidate classification

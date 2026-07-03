@@ -104,7 +104,7 @@ def list_summary_targets(db: Session, limit: int):
 
 def list_filter_targets(db: Session, limit: int):
     return db.query(News).options(joinedload(News.stock_links)).filter(
-        News.gpt_filter_result.is_(None),
+        or_(News.gpt_filter_result.is_(None), News.gpt_filter_result == "failed"),
         or_(News.gpt_summary_status == "done", News.content_preview.is_not(None), News.original_summary.is_not(None)),
     ).order_by(News.importance_score.desc(), News.published_at.desc().nullslast(), News.id.desc()).limit(limit).all()
 
@@ -117,7 +117,7 @@ def gpt_targets_counts(db: Session):
     summary_done = db.query(func.count(News.id)).filter(News.gpt_summary_status == "done").scalar() or 0
     summary_failed = db.query(func.count(News.id)).filter(News.gpt_summary_status == "failed").scalar() or 0
     filter_pending = db.query(func.count(News.id)).filter(
-        News.gpt_filter_result.is_(None),
+        or_(News.gpt_filter_result.is_(None), News.gpt_filter_result == "failed"),
         or_(News.gpt_summary_status == "done", News.content_preview.is_not(None), News.original_summary.is_not(None)),
     ).scalar() or 0
     filter_done = db.query(func.count(News.id)).filter(News.gpt_filter_result.in_(["important", "price_impact", "unnecessary"])).scalar() or 0
