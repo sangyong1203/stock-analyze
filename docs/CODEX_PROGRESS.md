@@ -2,41 +2,49 @@
 
 ## Current phase
 
-- Phase: first operation data input preparation
-- Task document: `docs/CODEX_TASK_2.2.md`
-- Status: DB backup, baseline verification, and first-operation input guide complete
+- Phase: initial portfolio input attempt and validation
+- Task document: `docs/CODEX_TASK_2.3.md`
+- Status: backup completed, stock-code mapping check completed, input blocked by missing stocks, reporting complete
 
 ## Completed major work
 
-- Reviewed current operation-readiness and MVP completion documents
-- Created a pre-operation SQLite backup under `storage/backups/`
+- Reviewed current operation documents:
+  - `docs/DEVELOPMENT_REPORT.md`
+  - `docs/OPERATION_READY_CHECKLIST.md`
+  - `docs/FIRST_OPERATION_DATA_INPUT_GUIDE.md`
+  - `docs/MVP_COMPLETION_REPORT.md`
+- Created a new pre-input SQLite backup for this task
 - Verified backup integrity by checking:
   - source DB path
   - backup file creation
   - non-zero backup size
-  - size match between source DB and backup DB
-- Confirmed that no live operating data was provided by the user in this session
-- Kept the instructed constraint:
-  - no guessed fund amount
-  - no guessed stock code
-  - no guessed quantity
-  - no guessed average price
-- Rechecked baseline portfolio-related APIs before any real input:
-  - `/api/funds/summary`
-  - `/api/holdings/summary`
-  - `/api/portfolio/summary`
-  - `/api/dashboard/summary`
-  - `/api/trades`
-- Reconfirmed current baseline is still empty for funds, holdings, portfolio, and trades
-- Added `docs/FIRST_OPERATION_DATA_INPUT_GUIDE.md`
-- Added `docs/CODEX_TASK_2.2_REPORT.md`
+  - source and backup file size match
+- Checked current baseline portfolio state before any input:
+  - no fund pools
+  - no fund transactions
+  - no trades
+  - no holdings
+- Verified requested stock-code mapping against `stocks`
+- Found missing stock codes that block the instructed all-at-once initial input:
+  - `368590`
+  - `411060`
+  - `442320`
+  - `422420`
+  - `487240`
+- Confirmed existing matches only for:
+  - `006400`
+  - `034020`
+  - `028050`
+  - `035420`
+- Did not perform partial input because the task explicitly forbids partial progress when missing stocks block the full set
+- Added `docs/INITIAL_PORTFOLIO_INPUT_REPORT.md`
+- Added `docs/CODEX_TASK_2.3_REPORT.md`
 
 ## Verification result
 
 | Item | Result |
 |---|---|
 | DB backup created | success |
-| Backup file size | non-zero |
 | Source vs backup size match | success |
 | `python -m compileall app` | success |
 | `npm run build` | success |
@@ -47,24 +55,22 @@
 | `/api/portfolio/summary` | 200 |
 | `/api/dashboard/summary` | 200 |
 | `/api/trades` | 200 |
-| Real operating data input | not performed |
+| Initial fund pool create | not performed |
+| Initial deposit create | not performed |
+| Initial BUY trades create | not performed |
 
 ## Confirmation-needed items
 
-- Item: real first-operation data was not provided by the user
-- Reason: the task explicitly forbids arbitrary live-data entry
-- Current result:
-  - no fund pool created
-  - no deposit entered
-  - no holdings input performed
-  - no trade input performed
-- Recommendation: use `docs/FIRST_OPERATION_DATA_INPUT_GUIDE.md` and provide actual values only when ready
+- Item: five required stock codes are absent from the current `stocks` table
+- Reason: full initial portfolio input would be incomplete if only available stocks were inserted
+- Recommendation: resolve stock master coverage for the missing codes first, then retry the full initial input task from the backup state
+- Current implementation status: blocked before data insertion
 
-- Item: browser-side verification for `/portfolio`, `/trades`, `/dashboard` could not be completed in this session
-- Reason: in-app browser page loads repeatedly timed out in the current session
-- Recommendation: perform one short human browser pass when entering real data
+- Item: browser verification for `/portfolio`, `/trades`, `/dashboard` was not completed
+- Reason: in-app browser verification was already unstable in recent sessions and this run was blocked before UI data changes existed to verify
+- Recommendation: rerun a short browser pass after the missing stock codes are resolved and the full input succeeds
 
 ## Next step suggestions
 
-- When real initial values are ready, follow `docs/FIRST_OPERATION_DATA_INPUT_GUIDE.md` in order
-- Keep the created pre-operation backup untouched until the first real input cycle is finished and verified
+- First resolve the five missing stock codes in `stocks`
+- Then rerun the same input set from the preserved backup file instead of mixing partial manual inserts

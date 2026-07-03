@@ -2,43 +2,44 @@
 
 ## Work overview
 
-- Latest completed scope: `docs/CODEX_TASK_2.2.md`
-- Scope handled in this task: pre-operation DB backup, first-operation input readiness verification, and input guide documentation
+- Latest completed scope: `docs/CODEX_TASK_2.3.md`
+- Scope handled in this task: initial portfolio input attempt, pre-input backup, stock-code mapping verification, and blocked-input reporting
 - Constraint kept:
   - no new feature
   - no new table
   - no new migration
   - no actual Gmail send
-  - no arbitrary live-data input
+  - no partial portfolio input when required stocks are missing
 
 ## Reference documents
 
-- `docs/CODEX_TASK_2.2.md`
+- `docs/CODEX_TASK_2.3.md`
 - `docs/DEVELOPMENT_REPORT.md`
 - `docs/OPERATION_READY_CHECKLIST.md`
+- `docs/FIRST_OPERATION_DATA_INPUT_GUIDE.md`
 - `docs/MVP_COMPLETION_REPORT.md`
 - `docs/INVESTMENT_SYSTEM_PLAN_v1.2.md`
 - `docs/MVP_DB_SCHEMA_v1.2.md`
 
 ## Completed work
 
-- Reviewed operation-readiness and MVP completion documents
-- Created a real pre-operation SQLite backup before any live data entry
-- Verified backup creation and integrity through file-size comparison
-- Determined that no actual operating data values were provided in the current user conversation
-- Did not create any live fund pool, deposit, holdings, or trade data
-- Rechecked current baseline summaries for:
-  - funds
-  - holdings
-  - portfolio
-  - dashboard
-  - trades
-- Documented a first-operation data input guide for when the user is ready to provide real values
+- Reviewed current operation-readiness and first-operation input guidance
+- Created a task-specific pre-input SQLite backup
+- Verified backup file creation and size integrity
+- Checked baseline data state before insertion:
+  - fund pools: 0
+  - fund transactions: 0
+  - trades: 0
+  - holdings: 0
+- Verified requested stock-code mapping against the current `stocks` table
+- Determined that five required stock codes are missing
+- Stopped before insertion because the task forbids partial input when required codes are missing
+- Rechecked summary APIs and trade list to confirm no unintended data was inserted
 
 ## Generated files
 
-- `docs/FIRST_OPERATION_DATA_INPUT_GUIDE.md`
-- `docs/CODEX_TASK_2.2_REPORT.md`
+- `docs/INITIAL_PORTFOLIO_INPUT_REPORT.md`
+- `docs/CODEX_TASK_2.3_REPORT.md`
 
 ## Modified files
 
@@ -48,26 +49,36 @@
 ## Backend implementation result
 
 - No backend code change
-- Baseline portfolio-related endpoints remained reachable
-- No live operational data was inserted into the DB in this task
+- No fund pool, deposit, or trade was inserted in this task
+- Current blocker is data readiness in `stocks`, not backend logic
 
 ## Frontend implementation result
 
 - No frontend code change
 - `npm run build` passed
-- Browser automation was attempted for `/portfolio`, `/trades`, and `/dashboard`, but page-load timeouts in the current session prevented final browser-side confirmation here
+- Browser verification was not completed because the run was blocked before any UI data change could be meaningfully validated
 
 ## DB implementation result
 
 - No schema change
 - No new table
 - No migration
-- Pre-operation backup created successfully:
+- Task-specific backup created successfully:
   - source DB: `backend/stock_analyze.db`
-  - backup directory: `storage/backups/`
-- Created backup file:
-  - `storage/backups/stock_analyze_before_first_operation_20260703_103226.db`
-- Source DB size and backup DB size matched
+  - backup file: `storage/backups/stock_analyze_before_initial_holdings_input_20260703_110349.db`
+- Source and backup file sizes matched
+- Required stock-code mapping result:
+  - matched:
+    - `006400`
+    - `034020`
+    - `028050`
+    - `035420`
+  - missing:
+    - `368590`
+    - `411060`
+    - `442320`
+    - `422420`
+    - `487240`
 
 ## Execution method
 
@@ -107,23 +118,24 @@ Checked APIs:
 - `/api/portfolio/summary`: 200
 - `/api/dashboard/summary`: 200
 - `/api/trades`: 200
-- Actual operating data input: not performed
-- Actual Gmail send: not performed
+- Full stock-code mapping availability: failed
+- Initial portfolio input: not performed
 
 ## Incomplete items
 
-- Browser-side final confirmation for `/portfolio`, `/trades`, and `/dashboard` was not completed in this session because of in-app browser timeouts
+- Actual initial fund/deposit/trade input could not proceed because five required stock codes are missing from `stocks`
 
 ## Confirmation-needed items
 
-- Real fund name, cash amount, holdings, quantity, average price, and buy date are still needed from the user before actual first-operation input
+- Stock master coverage for `368590`, `411060`, `442320`, `422420`, `487240` must be resolved before retrying the full input set
 
 ## Next step suggestions
 
-- Follow `docs/FIRST_OPERATION_DATA_INPUT_GUIDE.md` once real initial values are ready
-- Keep the backup created in this task available until first-operation input and verification are complete
+- Resolve the missing stock codes first
+- Retry the exact same initial input task from the preserved backup file after the stock coverage issue is fixed
 
 ## Final completion statement
 
-CODEX_TASK_2.2 첫 운영 데이터 입력 준비 작업 완료했습니다.
-DEVELOPMENT_REPORT.md를 확인해 주세요.
+CODEX_TASK_2.3 초기 운영 데이터 입력 시도 작업은 백업까지 완료했고,
+필수 종목 코드 누락으로 실제 입력 전에 중단했습니다.
+DEVELOPMENT_REPORT.md와 INITIAL_PORTFOLIO_INPUT_REPORT.md를 확인해 주세요.
