@@ -2,50 +2,48 @@
 
 ## Work overview
 
-- Latest completed scope: `docs/CODEX_TASK_2.16.md`
-- Scope handled in this task: verify whether KRX price collection automatically triggers holdings recalculation, and connect it with a minimal fix where missing
+- Latest completed scope: `docs/CODEX_TASK_2.17.md`
+- Scope handled in this task: register the requested set of multi-stock price alerts and verify the result through dry-run only
 - Constraint kept:
   - no real Gmail send
   - no new table
   - no migration
   - no schema change
-  - minimal backend fix only
+  - no backend or frontend code change
 
 ## Reference documents
 
-- `docs/CODEX_TASK_2.16.md`
+- `docs/CODEX_TASK_2.17.md`
 - `docs/INVESTMENT_SYSTEM_PLAN_v1.2.md`
 - `docs/MVP_DB_SCHEMA_v1.2.md`
 
 ## Completed work
 
-- Reviewed current KRX daily/range collect flow and scheduled job manual run path
-- Confirmed that holdings recalculation was not automatically chained after price collection
-- Applied minimal backend fix in price collection service
-- Restarted backend server
-- Verified the fixed link through:
-  - KRX daily collect API
-  - KRX range collect API
-  - scheduled job manual run
-- Verified holdings, portfolio, and dashboard summaries remained aligned after the automatic recalculation
+- Checked the current price-alert list before registration
+- Verified there were no existing duplicate alerts for the requested set
+- Resolved stock IDs for all requested symbols
+- Registered 7 `TARGET_PRICE_BELOW` alerts with the requested target prices
+- Executed price-alert dry-run only
+- Verified evaluated count, sendable count, and skipped reason
 
 ## Generated files
 
-- `docs/PRICE_REFRESH_RECALCULATION_LINK_REPORT.md`
-- `docs/CODEX_TASK_2.16_REPORT.md`
+- `docs/CODEX_TASK_2.17_REPORT.md`
 
 ## Modified files
 
-- `backend/app/domains/prices/service.py`
 - `docs/CODEX_PROGRESS.md`
 - `docs/DEVELOPMENT_REPORT.md`
 
 ## Backend implementation result
 
-- Added automatic holdings recalculation after non-dry-run KRX daily collect
-- Added automatic holdings recalculation after non-dry-run KRX range collect
-- This also covers scheduled job manual runs because the jobs service uses the same price service functions
-- Dry-run behavior remains unchanged
+- No backend code change
+- Existing APIs used:
+  - `GET /api/price-alerts`
+  - `POST /api/price-alerts`
+  - `GET /api/price-alerts/summary`
+  - `POST /api/price-alerts/evaluate/dry-run`
+  - `GET /api/stocks/search`
 
 ## Frontend implementation result
 
@@ -56,68 +54,65 @@
 - No schema change
 - No new table
 - No migration
-- Holdings rows were regenerated automatically after each live collect path during verification
+- Price-alert rows after this task:
+  - `7`
+- Enabled rows after this task:
+  - `7`
 
 ## Execution method
 
 Main validation:
 
 ```text
-GET /api/holdings
-POST /api/prices/collect/krx/daily
-POST /api/prices/collect/krx/range
-POST /api/jobs/4/run
-GET /api/holdings/summary
-GET /api/portfolio/summary
-GET /api/dashboard/summary
-python -m compileall app
+GET /api/price-alerts
+GET /api/stocks/search?q=...
+POST /api/price-alerts
+GET /api/price-alerts/summary
+POST /api/price-alerts/evaluate/dry-run
 ```
 
 ## Test result
 
-- `python -m compileall app`: passed
-- Baseline holdings latest `created_at` before verification:
-  - `2026-07-03T06:32:52.947762`
-- `POST /api/prices/collect/krx/daily`: 200
-  - `fetched_count = 2758`
-  - `updated_count = 2758`
-  - latest holding `created_at = 2026-07-03T06:50:34.752168`
-- `POST /api/prices/collect/krx/range`: 200
-  - `requested_date_count = 1`
-  - `fetched_count = 2758`
-  - `updated_count = 2758`
-  - latest holding `created_at = 2026-07-03T06:50:42.187389`
-- `POST /api/jobs/4/run`: 200
-  - job key `krx_price_daily`
-  - `fetched_count = 2758`
-  - `updated_count = 2758`
-  - latest holding `created_at = 2026-07-03T06:50:48.772086`
-- `GET /api/holdings/summary`: 200
-  - `holding_count = 4`
-  - `total_market_value = 2283500.00`
-- `GET /api/portfolio/summary`: 200
-  - `holding_count = 4`
-  - `total_market_value = 2283500.00`
-- `GET /api/dashboard/summary`: 200
-  - `portfolio_summary.holding_count = 4`
-  - `portfolio_summary.total_market_value = 2283500.00`
+- `GET /api/price-alerts` before registration: 200
+  - existing row count `0`
+- `POST /api/price-alerts` x7: success
+  - NAVER `035420` / target `190000`
+  - LG에너지솔루션 `373220` / target `330000`
+  - 현대모비스 `012330` / target `320000`
+  - LG `003550` / target `90000`
+  - 현대차 `005380` / target `300000`
+  - LG전자 `066570` / target `140000`
+  - 삼성SDI `006400` / target `400000`
+- `GET /api/price-alerts/summary`: 200
+  - `total_count = 7`
+  - `enabled_count = 7`
+- `POST /api/price-alerts/evaluate/dry-run`: 200
+  - `evaluated_count = 7`
+  - `matched_count = 6`
+  - `sendable_count = 6`
+  - `skipped_count = 1`
+  - skipped reason `condition_not_met = 1`
+- Dry-run interpretation:
+  - NAVER only was not matched because current price `253000` is above target `190000`
+  - the other 6 alerts were already below their requested target prices, so they appeared as `would_send`
 - Real Gmail send in this task: none
 
 ## Incomplete items
 
-- No further scope expansion was done beyond the price-collect to holdings-recalculation link
+- No real send path was executed by design
 
 ## Confirmation-needed items
 
-- Automatic recalculation currently refreshes all holdings after each non-dry-run collect
-- This is acceptable for current MVP scale and was chosen as the minimum safe integration point
+- Six of the registered target-below alerts are already in matched state under current live prices
+- If these were intended as future-entry thresholds rather than immediate triggers, target prices should be adjusted later
 
 ## Next step suggestions
 
-- Keep using the linked runtime path for live KRX collection
-- If collection volume grows later, consider narrower recalculation optimization as a separate task
+- Review whether the six immediately matched target prices are intentional
+- Keep using dry-run before any real alert send/evaluate path
 
 ## Final completion statement
 
-CODEX_TASK_2.16 price collect and holdings automatic recalculation link verification completed.
+CODEX_TASK_2.17 multiple price-alert registration and dry-run verification completed.
+Real Gmail send was not executed.
 Check `DEVELOPMENT_REPORT.md`.
