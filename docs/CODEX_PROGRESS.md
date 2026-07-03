@@ -2,75 +2,99 @@
 
 ## Current phase
 
-- Phase: initial portfolio input attempt and validation
-- Task document: `docs/CODEX_TASK_2.3.md`
-- Status: backup completed, stock-code mapping check completed, input blocked by missing stocks, reporting complete
+- Phase: non-ETF initial portfolio input and validation
+- Task document: `docs/CODEX_TASK_2.4.md`
+- Status: backup completed, non-ETF input completed, API validation completed, browser preview check partially completed
 
 ## Completed major work
 
-- Reviewed current operation documents:
+- Reviewed current task context and prior input report documents:
   - `docs/DEVELOPMENT_REPORT.md`
-  - `docs/OPERATION_READY_CHECKLIST.md`
+  - `docs/INITIAL_PORTFOLIO_INPUT_REPORT.md`
   - `docs/FIRST_OPERATION_DATA_INPUT_GUIDE.md`
-  - `docs/MVP_COMPLETION_REPORT.md`
-- Created a new pre-input SQLite backup for this task
-- Verified backup integrity by checking:
-  - source DB path
-  - backup file creation
-  - non-zero backup size
-  - source and backup file size match
-- Checked current baseline portfolio state before any input:
+- Reused the live DB state preserved after `CODEX_TASK_2.3`
+- Verified pre-input baseline remained empty:
   - no fund pools
   - no fund transactions
   - no trades
   - no holdings
-- Verified requested stock-code mapping against `stocks`
-- Found missing stock codes that block the instructed all-at-once initial input:
+- Verified the four non-ETF stock codes already exist in `stocks`:
+  - `006400`
+  - `034020`
+  - `028050`
+  - `035420`
+- Kept the five ETF codes excluded by user decision:
   - `368590`
   - `411060`
   - `442320`
   - `422420`
   - `487240`
-- Confirmed existing matches only for:
-  - `006400`
-  - `034020`
-  - `028050`
-  - `035420`
-- Did not perform partial input because the task explicitly forbids partial progress when missing stocks block the full set
-- Added `docs/INITIAL_PORTFOLIO_INPUT_REPORT.md`
-- Added `docs/CODEX_TASK_2.3_REPORT.md`
+- Verified task-specific backup file exists:
+  - `storage/backups/stock_analyze_before_non_etf_initial_input_20260703_111724.db`
+- Created fund pool:
+  - `기본 투자계좌`
+- Inserted initial deposit:
+  - `5,108,090`
+- Inserted four initial BUY trades on `2026-07-03`
+- Verified holdings were recalculated automatically
+- Verified ETF trades and ETF holdings were not created
+- Added `docs/NON_ETF_INITIAL_PORTFOLIO_INPUT_REPORT.md`
+- Added `docs/CODEX_TASK_2.4_REPORT.md`
 
 ## Verification result
 
 | Item | Result |
 |---|---|
-| DB backup created | success |
-| Source vs backup size match | success |
 | `python -m compileall app` | success |
 | `npm run build` | success |
 | `/health` | 200 |
-| `/api/auth/status` | 200 |
 | `/api/funds/summary` | 200 |
+| `/api/trades` | 200 |
+| `/api/holdings` | 200 |
 | `/api/holdings/summary` | 200 |
 | `/api/portfolio/summary` | 200 |
 | `/api/dashboard/summary` | 200 |
-| `/api/trades` | 200 |
-| Initial fund pool create | not performed |
-| Initial deposit create | not performed |
-| Initial BUY trades create | not performed |
+| active fund pool count | 1 |
+| trade row count | 4 |
+| holding count | 4 |
+| ETF trade rows | 0 |
+| ETF holding rows | 0 |
+
+## Current validated data state
+
+- Fund pool:
+  - `기본 투자계좌`
+- Deposit:
+  - `5,108,090`
+- Trades:
+  - `006400` quantity `5`, average price `596970`
+  - `034020` quantity `10`, average price `105215`
+  - `028050` quantity `10`, average price `55809`
+  - `035420` quantity `2`, average price `256500`
+- Funds summary:
+  - `active_pool_count = 1`
+  - `total_cash = 0`
+  - `total_deposit_amount = 5108090.00`
+  - `transaction_count = 5`
+- Holdings summary:
+  - `holding_count = 4`
+  - `closed_holding_count = 0`
+- Portfolio summary:
+  - `holding_count = 4`
+  - `total_invested_amount = 5108090.00`
+  - `total_cash = 0`
+- Dashboard summary:
+  - `recent_trades` count includes the 4 inserted BUY rows
+  - top holdings contain only the 4 non-ETF stocks
 
 ## Confirmation-needed items
 
-- Item: five required stock codes are absent from the current `stocks` table
-- Reason: full initial portfolio input would be incomplete if only available stocks were inserted
-- Recommendation: resolve stock master coverage for the missing codes first, then retry the full initial input task from the backup state
-- Current implementation status: blocked before data insertion
-
-- Item: browser verification for `/portfolio`, `/trades`, `/dashboard` was not completed
-- Reason: in-app browser verification was already unstable in recent sessions and this run was blocked before UI data changes existed to verify
-- Recommendation: rerun a short browser pass after the missing stock codes are resolved and the full input succeeds
+- Item: in-app browser preview did not complete real data rendering verification
+- Reason: `vite preview` page shell opened, but `/api/*` fetch failed in preview mode and screen-level value rendering could not be trusted from the preview browser pass
+- Recommendation: if browser QA is required, rerun against the actual frontend runtime configuration used for API connectivity
+- Current implementation status: API-level validation completed, browser preview validation partial
 
 ## Next step suggestions
 
-- First resolve the five missing stock codes in `stocks`
-- Then rerun the same input set from the preserved backup file instead of mixing partial manual inserts
+- Use the current four-stock, non-ETF portfolio as the new baseline for the next operational input task
+- If browser QA remains required, run a dedicated connected frontend session and recheck `/portfolio`, `/trades`, and `/dashboard`
