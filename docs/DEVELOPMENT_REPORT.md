@@ -2,93 +2,88 @@
 
 ## Work overview
 
-- Latest completed scope: `docs/CODEX_TASK_2.5.md`
-- Scope handled in this task: initial portfolio current-price validation, latest KRX price refresh, holdings recalculation, and reporting
+- Latest completed scope: `docs/CODEX_TASK_2.6.md`
+- Scope handled in this task: browser `Failed to fetch` root-cause isolation, minimal fix, and portfolio UI validation
 - Constraint kept:
-  - no new feature
-  - no new table
-  - no new migration
+  - no portfolio data change
   - no quantity change
   - no average price change
   - no trade edit or delete
   - no holdings direct edit
+  - no new table
+  - no migration
   - no Gmail send
 
 ## Reference documents
 
-- `docs/CODEX_TASK_2.5.md`
+- `docs/CODEX_TASK_2.6.md`
 - `docs/DEVELOPMENT_REPORT.md`
-- `docs/NON_ETF_INITIAL_PORTFOLIO_INPUT_REPORT.md`
+- `docs/INITIAL_PORTFOLIO_PRICE_VALIDATION_REPORT.md`
 - `docs/INVESTMENT_SYSTEM_PLAN_v1.2.md`
 - `docs/MVP_DB_SCHEMA_v1.2.md`
 
 ## Completed work
 
 - Reviewed only the immediately required prior reports for this task
-- Verified the 4-stock non-ETF initial portfolio remained unchanged in quantity and average price
-- Confirmed the holdings calculation path uses `stocks.current_price`
-- Verified pre-refresh latest price date was `2025-06-24`
-- Verified held-stock latest `stock_prices` rows were also dated `2025-06-24`
-- Tested existing KRX daily collection in dry-run mode for multiple dates
-- Confirmed `2025-07-03` is the latest date that returned real KRX rows in this run, while `2026-07-03` returned `0`
-- Executed existing KRX daily collection for `2025-07-03`
-- Re-ran holdings recalculation after the price refresh completed
-- Re-verified holdings, holdings summary, portfolio summary, dashboard summary, and price summary
-- Compared system-recalculated market values against the user-provided previous reference values
-- Ran backend compile and frontend build again
-- Performed a limited dev-server browser check for `/portfolio` and `/dashboard`
+- Confirmed the validated portfolio target values from `CODEX_TASK_2.5`
+- Checked frontend API base URL handling
+- Checked backend CORS middleware and local-origin settings
+- Identified the root cause of browser `Failed to fetch`
+- Applied a minimal backend CORS fix so localhost and `127.0.0.1` with varying local ports are accepted
+- Re-verified CORS preflight for:
+  - `http://127.0.0.1:5174`
+  - `http://127.0.0.1:4173`
+  - `http://localhost:5173`
+- Rechecked direct API responses to confirm portfolio data remained unchanged
+- Launched the frontend dev server on `http://127.0.0.1:5173`
+- Verified `/portfolio`, `/dashboard`, and `/trades` render actual data in the browser
+- Re-ran backend compile and frontend build
 
 ## Generated files
 
-- `docs/INITIAL_PORTFOLIO_PRICE_VALIDATION_REPORT.md`
-- `docs/CODEX_TASK_2.5_REPORT.md`
+- `docs/PORTFOLIO_BROWSER_FETCH_FIX_REPORT.md`
+- `docs/CODEX_TASK_2.6_REPORT.md`
 
 ## Modified files
 
+- `backend/app/core/config.py`
+- `backend/app/main.py`
 - `docs/CODEX_PROGRESS.md`
 - `docs/DEVELOPMENT_REPORT.md`
 
 ## Backend implementation result
 
-- No backend code change
-- Existing KRX daily collection API was reused as-is
-- Existing holdings recalculation API was reused as-is
-- Important sequencing note:
-  - a holdings recalculation triggered before the daily collection completed still reflected the older price basis
-  - after `2025-07-03` collection completed, running holdings recalculation again updated the persisted holding valuation fields correctly
+- Backend code changed only in CORS configuration
+- Root cause:
+  - frontend used the backend directly at `http://127.0.0.1:8000`
+  - backend allowed-origins were pinned to `5173`
+  - when Vite dev or preview ran on another local port such as `5174` or `4173`, preflight requests were rejected
+- Applied fix:
+  - preserved the explicit configured origins
+  - added `allowed_origin_regex = ^https?://(localhost|127\.0\.0\.1)(:\d+)?$`
+  - wired that regex into `CORSMiddleware`
+- No API behavior change beyond allowing local-browser origins on alternate ports
 
 ## Frontend implementation result
 
 - No frontend code change
 - `npm run build` passed
-- Frontend API base remains `http://127.0.0.1:8000` by default
-- Browser validation was partial because the in-app browser still showed `Failed to fetch` during `/portfolio` and `/dashboard`
-- Final correctness was therefore confirmed by API and DB validation rather than browser-rendered KPI values
+- Frontend default API base remains `http://127.0.0.1:8000`
+- Browser UI validation succeeded on the dev server after the backend CORS fix
+- Visible pages now render live portfolio and trade data instead of staying in the failed-fetch state
 
 ## DB implementation result
 
 - No schema change
 - No new table
 - No migration
-- `stock_prices` summary changed:
-  - before refresh: `latest_price_date = 2025-06-24`
-  - after refresh: `latest_price_date = 2025-07-03`
-- KRX daily collection result for `2025-07-03`:
-  - fetched `2758`
-  - inserted `2758`
-  - updated `0`
-  - stock created `1`
-- Final held-stock price basis:
-  - `006400` latest close `185300`
-  - `034020` latest close `61900`
-  - `028050` latest close `23200`
-  - `035420` latest close `253000`
-- Final holdings validation:
-  - quantity unchanged
-  - average price unchanged
-  - current price equals latest `stock_prices.close`
-  - `market_value = current_price * quantity`
-  - `unrealized_profit_loss = market_value - total_buy_amount`
+- No data mutation was performed for portfolio/trades/funds/holdings in this task
+- Verified target values remained unchanged:
+  - `total_cash = 0`
+  - `total_invested_amount = 5108090.00`
+  - `total_market_value = 2283500.00`
+  - `total_unrealized_profit_loss = -2824590.00`
+  - `holding_count = 4`
 
 ## Execution method
 
@@ -100,68 +95,69 @@ python -m compileall app
 
 ```bash
 cd frontend
+npm run dev -- --host 127.0.0.1 --port 5173
 npm run build
-npm run dev
 ```
 
-Main API checks:
+Main validation:
 
 ```text
-/api/prices/summary
-/api/prices/collect/krx/daily
-/api/holdings
-/api/holdings/recalculate
-/api/holdings/summary
+CORS preflight to /api/portfolio/summary
+/health
 /api/portfolio/summary
+/api/holdings
+/api/holdings/summary
 /api/dashboard/summary
+/portfolio
+/dashboard
+/trades
 ```
 
 ## Test result
 
 - `python -m compileall app`: success
 - `npm run build`: success
-- dry-run daily collect `2025-06-25`: success
-- dry-run daily collect `2025-06-30`: success
-- dry-run daily collect `2025-07-03`: success
-- dry-run daily collect `2026-07-03`: fetched `0`
-- actual daily collect `2025-07-03`: success
-- `/api/prices/summary`: 200
-  - `total_price_rows = 355185`
-  - `latest_price_date = 2025-07-03`
-- `/api/holdings`: 200
-  - row count `4`
+- preflight from `http://127.0.0.1:5174`: 200
+- preflight from `http://127.0.0.1:4173`: 200
+- preflight from `http://localhost:5173`: 200
+- `/health`: 200
+- `/api/portfolio/summary`: 200
+  - `total_market_value = 2283500.00`
+  - `total_unrealized_profit_loss = -2824590.00`
 - `/api/holdings/summary`: 200
   - `holding_count = 4`
-  - `total_market_value = 2283500.00`
-  - `total_unrealized_profit_loss = -2824590.00`
-- `/api/portfolio/summary`: 200
-  - `total_invested_amount = 5108090.00`
-  - `total_market_value = 2283500.00`
-  - `total_unrealized_profit_loss = -2824590.00`
 - `/api/dashboard/summary`: 200
   - `portfolio_summary.total_market_value = 2283500.00`
-  - `holding_summary.total_market_value = 2283500.00`
-  - dashboard top holdings reflect the same 4 stocks
-- Browser dev check:
-  - route shell load: success
-  - rendered live values verification: not completed
-  - observed issue: `Failed to fetch`
+- Browser `/portfolio`:
+  - 4 holdings visible
+  - `총 자산 2,283,500원`
+  - `평가금액 2,283,500원`
+  - `평가손익 -2,824,590원`
+  - `현금 잔고 0원`
+- Browser `/dashboard`:
+  - `총 자산 2,283,500원`
+  - `평가 손익 -2,824,590원`
+  - `보유 종목 4`
+  - `총 매수금액 5,108,090원`
+- Browser `/trades`:
+  - 4 trade rows visible
+  - `삼성SDI`, `두산에너빌리티`, `삼성E&A`, `NAVER` rendered
 
 ## Incomplete items
 
-- Full browser UI verification with rendered live valuation data was not completed because the in-app browser fetch failed
+- A stale older `4173` browser log entry still appeared in the shared in-app browser log buffer, even though the current `5173` pages rendered correctly after the fix
 
 ## Confirmation-needed items
 
-- The system date in this environment is `2026-07-03`, but the latest KRX date that actually returned rows in this run was `2025-07-03`
-- This report treats `2025-07-03` as the latest confirmed trade-date basis for valuation because `2026-07-03` dry-run returned `0`
+- If a fully clean console-log audit is required, it should be rerun in a fresh browser session
+- For this task scope, the visible UI state and current CORS preflight/API behavior are sufficient to confirm the active fetch path is working
 
 ## Next step suggestions
 
-- Continue future validation or input tasks from the refreshed `2025-07-03` price basis
-- If browser QA is required in the next task, resolve the current browser fetch failure before relying on UI-level assertions
+- Continue local browser QA with `127.0.0.1` consistently for frontend and backend
+- If preview-mode QA is used later, the backend now also accepts alternate local preview ports
 
 ## Final completion statement
 
-CODEX_TASK_2.5 초기 포트폴리오 현재가 검증 작업 완료했습니다.
-DEVELOPMENT_REPORT.md와 INITIAL_PORTFOLIO_PRICE_VALIDATION_REPORT.md를 확인해 주세요.
+CODEX_TASK_2.6 브라우저 Failed to fetch 수정 및 포트폴리오 UI 검증 작업 완료했습니다.
+DEVELOPMENT_REPORT.md와 PORTFOLIO_BROWSER_FETCH_FIX_REPORT.md를 확인해 주세요.

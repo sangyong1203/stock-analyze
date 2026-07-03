@@ -7,6 +7,7 @@ class Settings(BaseSettings):
     database_url: str = "sqlite:///./stock_analyze.db"
     allowed_origin: str = ""
     allowed_origins: str = "http://localhost:5173,http://127.0.0.1:5173"
+    allowed_origin_regex: str = r"^https?://(localhost|127\.0\.0\.1)(:\d+)?$"
     google_client_id: str = ""
     google_client_secret: str = ""
     google_allowed_email: str = ""
