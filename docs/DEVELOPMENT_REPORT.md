@@ -2,33 +2,34 @@
 
 ## Work overview
 
-- Latest completed scope: `docs/CODEX_TASK_2.17.md`
-- Scope handled in this task: register the requested set of multi-stock price alerts and verify the result through dry-run only
+- Latest completed scope: `docs/CODEX_TASK_2.18.md`
+- Scope handled in this task: verify one real Gmail send for existing price alerts and confirm duplicate same-day blocking afterward
 - Constraint kept:
-  - no real Gmail send
+  - real send API executed once only
+  - `force=true` not used
+  - no news-alert execution
   - no new table
   - no migration
-  - no schema change
   - no backend or frontend code change
 
 ## Reference documents
 
-- `docs/CODEX_TASK_2.17.md`
+- `docs/CODEX_TASK_2.18.md`
 - `docs/INVESTMENT_SYSTEM_PLAN_v1.2.md`
 - `docs/MVP_DB_SCHEMA_v1.2.md`
 
 ## Completed work
 
-- Checked the current price-alert list before registration
-- Verified there were no existing duplicate alerts for the requested set
-- Resolved stock IDs for all requested symbols
-- Registered 7 `TARGET_PRICE_BELOW` alerts with the requested target prices
-- Executed price-alert dry-run only
-- Verified evaluated count, sendable count, and skipped reason
+- Executed pre-send dry-run for the existing 7 price alerts
+- Confirmed six alerts were sendable and NAVER remained unmatched
+- Executed real `POST /api/price-alerts/evaluate` once with `force=false`
+- Verified six actual Gmail sends completed successfully
+- Verified alert histories, alert summary, and dashboard after send
+- Executed post-send dry-run and confirmed same-day duplicate blocking through `already_sent_today`
 
 ## Generated files
 
-- `docs/CODEX_TASK_2.17_REPORT.md`
+- `docs/CODEX_TASK_2.18_REPORT.md`
 
 ## Modified files
 
@@ -39,11 +40,11 @@
 
 - No backend code change
 - Existing APIs used:
-  - `GET /api/price-alerts`
-  - `POST /api/price-alerts`
-  - `GET /api/price-alerts/summary`
   - `POST /api/price-alerts/evaluate/dry-run`
-  - `GET /api/stocks/search`
+  - `POST /api/price-alerts/evaluate`
+  - `GET /api/price-alerts/histories`
+  - `GET /api/price-alerts/summary`
+  - `GET /api/dashboard/summary`
 
 ## Frontend implementation result
 
@@ -54,65 +55,73 @@
 - No schema change
 - No new table
 - No migration
-- Price-alert rows after this task:
+- New alert history rows created by this task:
   - `7`
-- Enabled rows after this task:
-  - `7`
+- Status breakdown:
+  - `sent = 6`
+  - `skipped = 1`
 
 ## Execution method
 
 Main validation:
 
 ```text
-GET /api/price-alerts
-GET /api/stocks/search?q=...
-POST /api/price-alerts
+POST /api/price-alerts/evaluate/dry-run
+POST /api/price-alerts/evaluate
+GET /api/price-alerts/histories
 GET /api/price-alerts/summary
+GET /api/dashboard/summary
 POST /api/price-alerts/evaluate/dry-run
 ```
 
 ## Test result
 
-- `GET /api/price-alerts` before registration: 200
-  - existing row count `0`
-- `POST /api/price-alerts` x7: success
-  - NAVER `035420` / target `190000`
-  - LG에너지솔루션 `373220` / target `330000`
-  - 현대모비스 `012330` / target `320000`
-  - LG `003550` / target `90000`
-  - 현대차 `005380` / target `300000`
-  - LG전자 `066570` / target `140000`
-  - 삼성SDI `006400` / target `400000`
-- `GET /api/price-alerts/summary`: 200
-  - `total_count = 7`
-  - `enabled_count = 7`
-- `POST /api/price-alerts/evaluate/dry-run`: 200
+- `POST /api/price-alerts/evaluate/dry-run` before send: 200
   - `evaluated_count = 7`
   - `matched_count = 6`
   - `sendable_count = 6`
   - `skipped_count = 1`
   - skipped reason `condition_not_met = 1`
-- Dry-run interpretation:
-  - NAVER only was not matched because current price `253000` is above target `190000`
-  - the other 6 alerts were already below their requested target prices, so they appeared as `would_send`
-- Real Gmail send in this task: none
+- `POST /api/price-alerts/evaluate` once with `force=false`: 200
+  - `sent_count = 6`
+  - `failed_count = 0`
+  - NAVER `035420` stayed unmatched because current price `253000` is above target `190000`
+- `GET /api/price-alerts/histories` after send: 200
+  - six new `sent` rows added
+  - one new `skipped` row added with `condition_not_met`
+- `GET /api/price-alerts/summary` after send: 200
+  - `total_count = 7`
+  - `enabled_count = 7`
+  - `triggered_count = 6`
+  - `sent_count = 7`
+  - `failed_count = 0`
+  - `skipped_count = 2`
+  - `today_sent_count = 7`
+  - `hourly_sent_count = 6`
+- `GET /api/dashboard/summary` after send: 200
+  - dashboard `price_alert_summary` matched alert summary
+  - recent alert histories showed the newly sent price alerts
+- `POST /api/price-alerts/evaluate/dry-run` after send: 200
+  - `sendable_count = 0`
+  - `skipped_count = 7`
+  - skipped reasons:
+    - `condition_not_met = 1`
+    - `already_sent_today = 6`
 
 ## Incomplete items
 
-- No real send path was executed by design
+- None in this task scope
 
 ## Confirmation-needed items
 
-- Six of the registered target-below alerts are already in matched state under current live prices
-- If these were intended as future-entry thresholds rather than immediate triggers, target prices should be adjusted later
+- None
 
 ## Next step suggestions
 
-- Review whether the six immediately matched target prices are intentional
-- Keep using dry-run before any real alert send/evaluate path
+- For future real-send verification, avoid reusing same-day sent alerts because duplicate blocking is now working as intended
+- Continue using dry-run first before any real evaluate/send execution
 
 ## Final completion statement
 
-CODEX_TASK_2.17 multiple price-alert registration and dry-run verification completed.
-Real Gmail send was not executed.
+CODEX_TASK_2.18 real Gmail one-time send verification completed.
 Check `DEVELOPMENT_REPORT.md`.
