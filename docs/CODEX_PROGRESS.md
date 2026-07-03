@@ -2,48 +2,48 @@
 
 ## Current phase
 
-- Phase: portfolio browser fetch fix and UI validation
-- Task document: `docs/CODEX_TASK_2.6.md`
-- Status: failed-to-fetch root cause confirmed, minimal CORS fix applied, browser UI validation completed
+- Phase: price alert readiness check and input guidance
+- Task document: `docs/CODEX_TASK_2.7.md`
+- Status: dry-run validation completed, no real alert created, guide/report documentation completed
 
 ## Completed major work
 
 - Reviewed only the immediate task context:
   - `docs/DEVELOPMENT_REPORT.md`
+  - `docs/PORTFOLIO_BROWSER_FETCH_FIX_REPORT.md`
   - `docs/INITIAL_PORTFOLIO_PRICE_VALIDATION_REPORT.md`
-- Confirmed the portfolio target values that must remain unchanged:
+- Confirmed the current portfolio baseline remains unchanged:
+  - holdings: 4
   - `total_cash = 0`
   - `total_invested_amount = 5108090`
   - `total_market_value = 2283500`
   - `total_unrealized_profit_loss = -2824590`
-  - `holding_count = 4`
-- Verified frontend API base behavior:
-  - default API base is `http://127.0.0.1:8000`
-- Verified backend CORS behavior before the fix:
-  - configured origins were pinned to `5173`
-  - alternate ports such as `5174` and preview `4173` were outside the allow list
-- Identified root cause of browser `Failed to fetch`:
-  - dev or preview frontend running on a different localhost port triggered CORS preflight rejection
-- Applied minimal backend-only fix:
-  - added localhost/127.0.0.1 port-tolerant `allowed_origin_regex`
-  - kept existing explicit origin list intact
-- Re-verified CORS preflight after the fix:
-  - `http://127.0.0.1:5174` allowed
-  - `http://127.0.0.1:4173` allowed
-  - `http://localhost:5173` allowed
-- Re-verified direct APIs:
-  - `/api/portfolio/summary`
-  - `/api/holdings`
-  - `/api/holdings/summary`
-  - `/api/dashboard/summary`
-- Launched frontend dev server on `http://127.0.0.1:5173`
-- Verified browser UI pages:
-  - `/portfolio`
-  - `/dashboard`
-  - `/trades`
-- Confirmed portfolio values and trade data are now rendered in the browser
-- Added `docs/PORTFOLIO_BROWSER_FETCH_FIX_REPORT.md`
-- Added `docs/CODEX_TASK_2.6_REPORT.md`
+- Checked current price-alert API state:
+  - `/api/price-alerts`
+  - `/api/price-alerts/summary`
+  - `/api/price-alerts/histories`
+  - `/api/price-alerts/evaluate/dry-run`
+- Confirmed current DB/API alert state:
+  - `price_alerts` rows: `0`
+  - price alert history rows: `0`
+  - alert summary totals all `0`
+- Confirmed dry-run behavior with no alert conditions:
+  - `evaluated_count = 0`
+  - `sent_count = 0`
+  - `failed_count = 0`
+  - no history rows added
+- Confirmed real-send path separation:
+  - actual Gmail path exists only on `/api/price-alerts/evaluate`
+  - this task did not call that route
+- Confirmed duplicate-send guard exists in current logic:
+  - `already_sent_today`
+  - failed-history same-day retry guard unless `force=true`
+  - daily/hourly limit guards
+- Confirmed no alert condition was created without explicit user-provided thresholds
+- Verified browser `/alerts` and `/dashboard` pages load current alert state
+- Added `docs/PRICE_ALERT_INPUT_GUIDE.md`
+- Added `docs/PRICE_ALERT_READY_REPORT.md`
+- Added `docs/CODEX_TASK_2.7_REPORT.md`
 
 ## Verification result
 
@@ -51,43 +51,40 @@
 |---|---|
 | `python -m compileall app` | success |
 | `npm run build` | success |
-| CORS preflight `127.0.0.1:5174` | 200 |
-| CORS preflight `127.0.0.1:4173` | 200 |
-| CORS preflight `localhost:5173` | 200 |
 | `/health` | 200 |
-| `/api/portfolio/summary` | 200 |
-| `/api/holdings/summary` | 200 |
-| `/api/dashboard/summary` | 200 |
-| browser `/portfolio` data render | success |
-| browser `/dashboard` data render | success |
-| browser `/trades` data render | success |
+| `/api/price-alerts` | 200 |
+| `/api/price-alerts/summary` | 200 |
+| `/api/price-alerts/histories` | 200 |
+| `/api/price-alerts/evaluate/dry-run` | 200 |
+| browser `/alerts` | success |
+| browser `/dashboard` | success |
 
-## Current validated UI state
+## Current validated alert state
 
-- `/portfolio`
-  - 4 holdings rendered
-  - total asset `2,283,500원`
-  - total market value `2,283,500원`
-  - unrealized profit/loss `-2,824,590원`
-  - cash `0원`
-- `/dashboard`
-  - total asset `2,283,500원`
-  - cash `0원`
-  - unrealized profit/loss `-2,824,590원`
-  - holding count `4`
-  - total buy amount `5,108,090원`
-- `/trades`
-  - 4 trade rows rendered
-  - the 4 target stocks are visible
+- price alerts:
+  - total `0`
+  - enabled `0`
+  - disabled `0`
+- price alert histories:
+  - total `0`
+  - sent `0`
+  - failed `0`
+  - skipped `0`
+- dry-run result:
+  - `evaluated_count = 0`
+  - `matched_count = 0`
+  - `sendable_count = 0`
+  - `sent_count = 0`
+  - `failed_count = 0`
 
 ## Confirmation-needed items
 
-- Item: browser console log output still exposed an older `4173` failed-fetch entry in the shared in-app browser log buffer
-- Reason: the current pages rendered correct live values after the CORS fix, so the visible UI state and current preflight checks indicate the active fetch path is now working
-- Recommendation: treat the current UI validation as successful and only revisit console-log purity if the user wants a fully fresh browser session audit
-- Current implementation status: fetch issue fixed for the active dev validation flow
+- Item: no real alert condition was registered in this task
+- Reason: the user has not provided explicit target price, entry price, or stop-loss thresholds
+- Recommendation: use `docs/PRICE_ALERT_INPUT_GUIDE.md` to supply concrete alert thresholds before any real alert creation task
+- Current implementation status: ready for user-provided alert conditions, dry-run path verified
 
 ## Next step suggestions
 
-- Continue browser-based QA from the current dev flow using `127.0.0.1` consistently
-- If a future task uses preview mode again, the relaxed localhost CORS handling now covers alternate local ports as well
+- Ask the user for explicit alert conditions in the documented input format
+- Keep using `/api/price-alerts/evaluate/dry-run` first before any real send path is considered
