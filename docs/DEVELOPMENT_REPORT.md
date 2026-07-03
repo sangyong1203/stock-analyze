@@ -2,49 +2,46 @@
 
 ## Work overview
 
-- Latest completed scope: `docs/CODEX_TASK_2.4.md`
-- Scope handled in this task: non-ETF initial portfolio input, live DB validation, and reporting
+- Latest completed scope: `docs/CODEX_TASK_2.5.md`
+- Scope handled in this task: initial portfolio current-price validation, latest KRX price refresh, holdings recalculation, and reporting
 - Constraint kept:
   - no new feature
   - no new table
   - no new migration
-  - no ETF stock master insertion
-  - no ETF trade insertion
+  - no quantity change
+  - no average price change
+  - no trade edit or delete
   - no holdings direct edit
   - no Gmail send
 
 ## Reference documents
 
-- `docs/CODEX_TASK_2.4.md`
+- `docs/CODEX_TASK_2.5.md`
 - `docs/DEVELOPMENT_REPORT.md`
-- `docs/INITIAL_PORTFOLIO_INPUT_REPORT.md`
-- `docs/FIRST_OPERATION_DATA_INPUT_GUIDE.md`
+- `docs/NON_ETF_INITIAL_PORTFOLIO_INPUT_REPORT.md`
 - `docs/INVESTMENT_SYSTEM_PLAN_v1.2.md`
 - `docs/MVP_DB_SCHEMA_v1.2.md`
 
 ## Completed work
 
-- Reviewed the prior blocked-input context from `CODEX_TASK_2.3`
-- Kept ETF inputs excluded per task decision
-- Verified the live DB baseline was still empty before insertion:
-  - fund pools: 0
-  - fund transactions: 0
-  - trades: 0
-  - holdings: 0
-- Verified the four non-ETF target stocks already exist in `stocks`
-- Verified task-specific backup file exists for the non-ETF input run
-- Created fund pool `기본 투자계좌`
-- Inserted initial deposit `5,108,090`
-- Inserted four initial BUY trades dated `2026-07-03`
-- Verified holdings recalculation, portfolio summary, dashboard summary, and trade list by API
-- Verified no ETF trades and no ETF holdings were created
-- Ran backend compile and frontend build
-- Performed a limited browser preview check for `/portfolio`, `/trades`, `/dashboard`
+- Reviewed only the immediately required prior reports for this task
+- Verified the 4-stock non-ETF initial portfolio remained unchanged in quantity and average price
+- Confirmed the holdings calculation path uses `stocks.current_price`
+- Verified pre-refresh latest price date was `2025-06-24`
+- Verified held-stock latest `stock_prices` rows were also dated `2025-06-24`
+- Tested existing KRX daily collection in dry-run mode for multiple dates
+- Confirmed `2025-07-03` is the latest date that returned real KRX rows in this run, while `2026-07-03` returned `0`
+- Executed existing KRX daily collection for `2025-07-03`
+- Re-ran holdings recalculation after the price refresh completed
+- Re-verified holdings, holdings summary, portfolio summary, dashboard summary, and price summary
+- Compared system-recalculated market values against the user-provided previous reference values
+- Ran backend compile and frontend build again
+- Performed a limited dev-server browser check for `/portfolio` and `/dashboard`
 
 ## Generated files
 
-- `docs/NON_ETF_INITIAL_PORTFOLIO_INPUT_REPORT.md`
-- `docs/CODEX_TASK_2.4_REPORT.md`
+- `docs/INITIAL_PORTFOLIO_PRICE_VALIDATION_REPORT.md`
+- `docs/CODEX_TASK_2.5_REPORT.md`
 
 ## Modified files
 
@@ -54,73 +51,66 @@
 ## Backend implementation result
 
 - No backend code change
-- Live DB input completed through existing funds and trades APIs
-- Inserted objects:
-  - fund pools: 1
-  - deposit transactions: 1
-  - BUY trades: 4
-- API validations succeeded for:
-  - `/api/funds/summary`
-  - `/api/trades`
-  - `/api/holdings`
-  - `/api/holdings/summary`
-  - `/api/portfolio/summary`
-  - `/api/dashboard/summary`
+- Existing KRX daily collection API was reused as-is
+- Existing holdings recalculation API was reused as-is
+- Important sequencing note:
+  - a holdings recalculation triggered before the daily collection completed still reflected the older price basis
+  - after `2025-07-03` collection completed, running holdings recalculation again updated the persisted holding valuation fields correctly
 
 ## Frontend implementation result
 
 - No frontend code change
 - `npm run build` passed
-- Frontend routes confirmed:
-  - `/portfolio`
-  - `/trades`
-  - `/dashboard`
-- Browser preview opened the route shells successfully
-- Preview-mode browser validation was partial because page-level `/api/*` fetch failed during `vite preview`, so final data correctness was validated by API responses rather than preview rendering
+- Frontend API base remains `http://127.0.0.1:8000` by default
+- Browser validation was partial because the in-app browser still showed `Failed to fetch` during `/portfolio` and `/dashboard`
+- Final correctness was therefore confirmed by API and DB validation rather than browser-rendered KPI values
 
 ## DB implementation result
 
 - No schema change
 - No new table
 - No migration
-- Backup file used for this task:
-  - `storage/backups/stock_analyze_before_non_etf_initial_input_20260703_111724.db`
-- Inserted non-ETF holdings only:
-  - `006400` quantity `5`, average price `596970`
-  - `034020` quantity `10`, average price `105215`
-  - `028050` quantity `10`, average price `55809`
-  - `035420` quantity `2`, average price `256500`
-- Explicitly excluded ETF codes:
-  - `368590`
-  - `411060`
-  - `442320`
-  - `422420`
-  - `487240`
-- ETF validation result:
-  - ETF trade rows: `0`
-  - ETF holding rows: `0`
+- `stock_prices` summary changed:
+  - before refresh: `latest_price_date = 2025-06-24`
+  - after refresh: `latest_price_date = 2025-07-03`
+- KRX daily collection result for `2025-07-03`:
+  - fetched `2758`
+  - inserted `2758`
+  - updated `0`
+  - stock created `1`
+- Final held-stock price basis:
+  - `006400` latest close `185300`
+  - `034020` latest close `61900`
+  - `028050` latest close `23200`
+  - `035420` latest close `253000`
+- Final holdings validation:
+  - quantity unchanged
+  - average price unchanged
+  - current price equals latest `stock_prices.close`
+  - `market_value = current_price * quantity`
+  - `unrealized_profit_loss = market_value - total_buy_amount`
 
 ## Execution method
 
 ```bash
 cd backend
-python -m compileall app
 python -m uvicorn app.main:app --host 127.0.0.1 --port 8000
+python -m compileall app
 ```
 
 ```bash
 cd frontend
 npm run build
-npm run preview --host 0.0.0.0
+npm run dev
 ```
 
-Checked APIs:
+Main API checks:
 
 ```text
-/health
-/api/funds/summary
-/api/trades
+/api/prices/summary
+/api/prices/collect/krx/daily
 /api/holdings
+/api/holdings/recalculate
 /api/holdings/summary
 /api/portfolio/summary
 /api/dashboard/summary
@@ -130,42 +120,48 @@ Checked APIs:
 
 - `python -m compileall app`: success
 - `npm run build`: success
-- `/health`: 200
-- `/api/funds/summary`: 200
-  - `active_pool_count = 1`
-  - `total_cash = 0`
-  - `total_deposit_amount = 5108090.00`
-  - `transaction_count = 5`
-- `/api/trades`: 200
+- dry-run daily collect `2025-06-25`: success
+- dry-run daily collect `2025-06-30`: success
+- dry-run daily collect `2025-07-03`: success
+- dry-run daily collect `2026-07-03`: fetched `0`
+- actual daily collect `2025-07-03`: success
+- `/api/prices/summary`: 200
+  - `total_price_rows = 355185`
+  - `latest_price_date = 2025-07-03`
+- `/api/holdings`: 200
   - row count `4`
 - `/api/holdings/summary`: 200
   - `holding_count = 4`
-  - `closed_holding_count = 0`
+  - `total_market_value = 2283500.00`
+  - `total_unrealized_profit_loss = -2824590.00`
 - `/api/portfolio/summary`: 200
-  - `holding_count = 4`
   - `total_invested_amount = 5108090.00`
-  - `total_cash = 0`
+  - `total_market_value = 2283500.00`
+  - `total_unrealized_profit_loss = -2824590.00`
 - `/api/dashboard/summary`: 200
-  - portfolio summary and holding summary aligned with API totals
-  - recent trades included the 4 inserted BUY rows
-- Browser preview:
+  - `portfolio_summary.total_market_value = 2283500.00`
+  - `holding_summary.total_market_value = 2283500.00`
+  - dashboard top holdings reflect the same 4 stocks
+- Browser dev check:
   - route shell load: success
-  - console error-free data rendering: not confirmed in preview mode
+  - rendered live values verification: not completed
+  - observed issue: `Failed to fetch`
 
 ## Incomplete items
 
-- Full browser UI verification with live API-connected rendering was not completed in this task
+- Full browser UI verification with rendered live valuation data was not completed because the in-app browser fetch failed
 
 ## Confirmation-needed items
 
-- Preview-mode `/api/*` fetch failure should be rechecked only if the user wants browser-level QA beyond the validated API results
+- The system date in this environment is `2026-07-03`, but the latest KRX date that actually returned rows in this run was `2025-07-03`
+- This report treats `2025-07-03` as the latest confirmed trade-date basis for valuation because `2026-07-03` dry-run returned `0`
 
 ## Next step suggestions
 
-- Continue future operational tasks from the current four-stock non-ETF baseline
-- If visual QA is required, rerun browser validation on the actual frontend runtime configuration that resolves API requests correctly
+- Continue future validation or input tasks from the refreshed `2025-07-03` price basis
+- If browser QA is required in the next task, resolve the current browser fetch failure before relying on UI-level assertions
 
 ## Final completion statement
 
-CODEX_TASK_2.4 ETF 제외 초기 포트폴리오 입력 작업 완료했습니다.
-DEVELOPMENT_REPORT.md와 NON_ETF_INITIAL_PORTFOLIO_INPUT_REPORT.md를 확인해 주세요.
+CODEX_TASK_2.5 초기 포트폴리오 현재가 검증 작업 완료했습니다.
+DEVELOPMENT_REPORT.md와 INITIAL_PORTFOLIO_PRICE_VALIDATION_REPORT.md를 확인해 주세요.
