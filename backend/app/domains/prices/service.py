@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.db.models import Stock, StockPrice
+from app.domains.holdings.service import recalculate_holdings
 from app.domains.prices import repository
 from app.domains.prices.schemas import (
     KrxDailyCollectRequest,
@@ -262,6 +263,7 @@ def collect_krx_daily_prices(db: Session, payload: KrxDailyCollectRequest) -> Kr
         except Exception as exc:  # noqa: BLE001 - DB write failure should surface clearly.
             db.rollback()
             raise HTTPException(status_code=500, detail=f"failed to save KRX daily prices: {exc}") from exc
+        recalculate_holdings(db)
     return result
 
 
@@ -320,6 +322,9 @@ def collect_krx_range_prices(db: Session, payload: KrxRangeCollectRequest) -> Kr
         result.errors.extend(date_result.errors)
         result.dates.append(date_result)
         current += timedelta(days=1)
+
+    if not payload.dry_run:
+        recalculate_holdings(db)
 
     return result
 

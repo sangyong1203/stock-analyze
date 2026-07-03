@@ -2,149 +2,122 @@
 
 ## Work overview
 
-- Latest completed scope: `docs/CODEX_TASK_2.15.md`
-- Scope handled in this task: verify and document the runtime order for refreshing price data and reflecting it into holdings, portfolio, dashboard, and price-alert dry-run
+- Latest completed scope: `docs/CODEX_TASK_2.16.md`
+- Scope handled in this task: verify whether KRX price collection automatically triggers holdings recalculation, and connect it with a minimal fix where missing
 - Constraint kept:
   - no real Gmail send
-  - no new feature
   - no new table
   - no migration
   - no schema change
+  - minimal backend fix only
 
 ## Reference documents
 
-- `docs/CODEX_TASK_2.15.md`
+- `docs/CODEX_TASK_2.16.md`
 - `docs/INVESTMENT_SYSTEM_PLAN_v1.2.md`
 - `docs/MVP_DB_SCHEMA_v1.2.md`
 
 ## Completed work
 
-- Checked current KRX price collect job/API state
-- Verified current price summary in live DB
-- Verified the required runtime relation between:
-  - KRX price collect
-  - holdings recalculate
-  - portfolio summary
-  - dashboard summary
-  - price alert dry-run
-- Checked the current 4 holdings against latest stored KRX prices
-- Executed holdings recalculate and reconfirmed summary values
-- Executed KRX daily collect dry-run
-- Executed price alert dry-run
-- Wrote operation routine documentation
+- Reviewed current KRX daily/range collect flow and scheduled job manual run path
+- Confirmed that holdings recalculation was not automatically chained after price collection
+- Applied minimal backend fix in price collection service
+- Restarted backend server
+- Verified the fixed link through:
+  - KRX daily collect API
+  - KRX range collect API
+  - scheduled job manual run
+- Verified holdings, portfolio, and dashboard summaries remained aligned after the automatic recalculation
 
 ## Generated files
 
-- `docs/PRICE_REFRESH_OPERATION_ROUTINE.md`
-- `docs/CODEX_TASK_2.15_REPORT.md`
+- `docs/PRICE_REFRESH_RECALCULATION_LINK_REPORT.md`
+- `docs/CODEX_TASK_2.16_REPORT.md`
 
 ## Modified files
 
+- `backend/app/domains/prices/service.py`
 - `docs/CODEX_PROGRESS.md`
 - `docs/DEVELOPMENT_REPORT.md`
 
 ## Backend implementation result
 
-- No backend code change
-- Existing verified APIs:
-  - `POST /api/prices/collect/krx/daily`
-  - `GET /api/prices/summary`
-  - `GET /api/prices/stocks/{stock_id}/latest`
-  - `POST /api/holdings/recalculate`
-  - `GET /api/holdings`
-  - `GET /api/holdings/summary`
-  - `GET /api/portfolio/summary`
-  - `GET /api/dashboard/summary`
-  - `POST /api/price-alerts/evaluate/dry-run`
+- Added automatic holdings recalculation after non-dry-run KRX daily collect
+- Added automatic holdings recalculation after non-dry-run KRX range collect
+- This also covers scheduled job manual runs because the jobs service uses the same price service functions
+- Dry-run behavior remains unchanged
 
 ## Frontend implementation result
 
 - No frontend code change
-- This task focused on backend/API runtime verification and operation documentation
 
 ## DB implementation result
 
 - No schema change
 - No new table
 - No migration
-- Live DB verification result:
-  - `total_price_rows = 355185`
-  - `latest_price_date = 2025-07-03`
-  - holdings rows `4`
+- Holdings rows were regenerated automatically after each live collect path during verification
 
 ## Execution method
 
 Main validation:
 
 ```text
-GET /api/jobs
-GET /api/prices/summary
 GET /api/holdings
-GET /api/prices/stocks/16/latest
-GET /api/prices/stocks/10/latest
-GET /api/prices/stocks/17/latest
-GET /api/prices/stocks/54/latest
 POST /api/prices/collect/krx/daily
-POST /api/holdings/recalculate
+POST /api/prices/collect/krx/range
+POST /api/jobs/4/run
 GET /api/holdings/summary
 GET /api/portfolio/summary
 GET /api/dashboard/summary
-POST /api/price-alerts/evaluate/dry-run
-GET /api/price-alerts/summary
-GET /api/jobs/summary
+python -m compileall app
 ```
 
 ## Test result
 
-- `GET /api/jobs`: 200
-  - `krx_price_daily`, `krx_price_range` jobs enabled
-  - no failed jobs in summary
-- `GET /api/prices/summary`: 200
-  - `total_price_rows = 355185`
-  - `latest_price_date = 2025-07-03`
-  - `latest_updated_stocks_count = 2758`
-- `GET /api/holdings`: 200
-  - holdings count `4`
-- Latest price row vs holdings current price matched for all 4 holdings:
-  - `006400` close `185300`
-  - `034020` close `61900`
-  - `035420` close `253000`
-  - `028050` close `23200`
-- `POST /api/prices/collect/krx/daily` dry-run: 200
-  - `bas_date = 20250703`
+- `python -m compileall app`: passed
+- Baseline holdings latest `created_at` before verification:
+  - `2026-07-03T06:32:52.947762`
+- `POST /api/prices/collect/krx/daily`: 200
   - `fetched_count = 2758`
-  - `error_count = 0`
-- `POST /api/holdings/recalculate`: 200
-  - `processed_trade_count = 4`
-  - `holding_count = 4`
+  - `updated_count = 2758`
+  - latest holding `created_at = 2026-07-03T06:50:34.752168`
+- `POST /api/prices/collect/krx/range`: 200
+  - `requested_date_count = 1`
+  - `fetched_count = 2758`
+  - `updated_count = 2758`
+  - latest holding `created_at = 2026-07-03T06:50:42.187389`
+- `POST /api/jobs/4/run`: 200
+  - job key `krx_price_daily`
+  - `fetched_count = 2758`
+  - `updated_count = 2758`
+  - latest holding `created_at = 2026-07-03T06:50:48.772086`
 - `GET /api/holdings/summary`: 200
+  - `holding_count = 4`
   - `total_market_value = 2283500.00`
 - `GET /api/portfolio/summary`: 200
   - `holding_count = 4`
   - `total_market_value = 2283500.00`
 - `GET /api/dashboard/summary`: 200
   - `portfolio_summary.holding_count = 4`
-  - dashboard top holdings and summary values aligned with holdings/portfolio
-- `POST /api/price-alerts/evaluate/dry-run`: 200
-  - `evaluated_count = 0`
-  - `sendable_count = 0`
+  - `portfolio_summary.total_market_value = 2283500.00`
 - Real Gmail send in this task: none
 
 ## Incomplete items
 
-- No active price-alert rows currently exist, so the verified alert dry-run path reflects zero evaluated targets
+- No further scope expansion was done beyond the price-collect to holdings-recalculation link
 
 ## Confirmation-needed items
 
-- Holdings reflection is currently a separate runtime step after price collection
-- Portfolio/dashboard correctness depends on that recalculation being run before review after a real price refresh
+- Automatic recalculation currently refreshes all holdings after each non-dry-run collect
+- This is acceptable for current MVP scale and was chosen as the minimum safe integration point
 
 ## Next step suggestions
 
-- Follow `PRICE_REFRESH_OPERATION_ROUTINE.md` after any live KRX refresh
-- If later desired, automatic chaining from price refresh to holdings recalculation can be discussed separately
+- Keep using the linked runtime path for live KRX collection
+- If collection volume grows later, consider narrower recalculation optimization as a separate task
 
 ## Final completion statement
 
-CODEX_TASK_2.15 price refresh operation routine verification completed.
+CODEX_TASK_2.16 price collect and holdings automatic recalculation link verification completed.
 Check `DEVELOPMENT_REPORT.md`.
