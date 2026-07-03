@@ -6,6 +6,7 @@ venv/
 
 # Backend runtime artifacts
 backend/stock_analyze.db
+storage/backups/*.db
 
 # Frontend
 frontend/node_modules/

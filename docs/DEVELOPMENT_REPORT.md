@@ -2,89 +2,72 @@
 
 ## Work overview
 
-- Latest completed scope: `docs/CODEX_TASK_2.1.md`
-- Scope handled in this task: operation readiness check, environment verification, SQLite backup plan documentation, and dry-run verification
+- Latest completed scope: `docs/CODEX_TASK_2.2.md`
+- Scope handled in this task: pre-operation DB backup, first-operation input readiness verification, and input guide documentation
 - Constraint kept:
   - no new feature
   - no new table
   - no new migration
   - no actual Gmail send
-  - no live operational data input
+  - no arbitrary live-data input
 
 ## Reference documents
 
-- `docs/CODEX_TASK_2.1.md`
+- `docs/CODEX_TASK_2.2.md`
 - `docs/DEVELOPMENT_REPORT.md`
+- `docs/OPERATION_READY_CHECKLIST.md`
 - `docs/MVP_COMPLETION_REPORT.md`
 - `docs/INVESTMENT_SYSTEM_PLAN_v1.2.md`
 - `docs/MVP_DB_SCHEMA_v1.2.md`
 
 ## Completed work
 
-- Reviewed the current MVP completion state before phase-2 preparation work
-- Checked backend settings loading structure for:
-  - Gmail SMTP
-  - OpenAI
-  - KRX
-  - SQLite database URL
-  - local CORS origin handling
-- Verified environment readiness status using `configured/missing` only
-- Confirmed runtime compatibility for:
-  - legacy `ALLOWED_ORIGIN`
-  - multi-origin `ALLOWED_ORIGINS`
-  - frontend API base URL override and fallback
-- Updated `backend/.env.example` to reflect explicit `ALLOWED_ORIGINS`
-- Created backup directory placeholder under `storage/backups/`
-- Added an operation readiness checklist document
-- Rechecked regression APIs
-- Rechecked dry-run alert APIs without executing actual send
+- Reviewed operation-readiness and MVP completion documents
+- Created a real pre-operation SQLite backup before any live data entry
+- Verified backup creation and integrity through file-size comparison
+- Determined that no actual operating data values were provided in the current user conversation
+- Did not create any live fund pool, deposit, holdings, or trade data
+- Rechecked current baseline summaries for:
+  - funds
+  - holdings
+  - portfolio
+  - dashboard
+  - trades
+- Documented a first-operation data input guide for when the user is ready to provide real values
 
 ## Generated files
 
-- `docs/OPERATION_READY_CHECKLIST.md`
-- `docs/CODEX_TASK_2.1_REPORT.md`
-- `storage/backups/.gitkeep`
+- `docs/FIRST_OPERATION_DATA_INPUT_GUIDE.md`
+- `docs/CODEX_TASK_2.2_REPORT.md`
 
 ## Modified files
 
-- `backend/.env.example`
 - `docs/CODEX_PROGRESS.md`
 - `docs/DEVELOPMENT_REPORT.md`
 
 ## Backend implementation result
 
-- No backend feature change was added
-- Settings loading structure was confirmed for:
-  - `DATABASE_URL`
-  - `ALLOWED_ORIGIN`
-  - `ALLOWED_ORIGINS`
-  - `GMAIL_SMTP_HOST`
-  - `GMAIL_SMTP_PORT`
-  - `GMAIL_SMTP_USERNAME`
-  - `GMAIL_SMTP_APP_PASSWORD`
-  - `ALERT_RECIPIENT_EMAIL`
-  - `OPENAI_API_KEY`
-  - `OPENAI_NEWS_SUMMARY_MODEL`
-  - `OPENAI_NEWS_FILTER_MODEL`
-  - `KRX_AUTH_KEY`
-  - `KRX_API_BASE_URL`
-- Current runtime auth status still shows OAuth not configured
+- No backend code change
+- Baseline portfolio-related endpoints remained reachable
+- No live operational data was inserted into the DB in this task
 
 ## Frontend implementation result
 
-- No frontend feature change was added
-- Frontend API base behavior was confirmed:
-  - `VITE_API_BASE_URL` is supported
-  - fallback is `http://127.0.0.1:8000`
-- Local browser compatibility remains aligned with localhost and `127.0.0.1` support
+- No frontend code change
+- `npm run build` passed
+- Browser automation was attempted for `/portfolio`, `/trades`, and `/dashboard`, but page-load timeouts in the current session prevented final browser-side confirmation here
 
 ## DB implementation result
 
 - No schema change
 - No new table
 - No migration
-- Existing SQLite DB path remains in use
-- Backup target directory placeholder created at `storage/backups/`
+- Pre-operation backup created successfully:
+  - source DB: `backend/stock_analyze.db`
+  - backup directory: `storage/backups/`
+- Created backup file:
+  - `storage/backups/stock_analyze_before_first_operation_20260703_103226.db`
+- Source DB size and backup DB size matched
 
 ## Execution method
 
@@ -104,45 +87,43 @@ Checked APIs:
 ```text
 /health
 /api/auth/status
-/api/jobs/summary
-/api/prices/summary
-/api/news/summary
-/api/price-alerts/summary
-/api/news/alerts/send/dry-run
-/api/price-alerts/evaluate/dry-run
+/api/funds/summary
+/api/holdings/summary
+/api/portfolio/summary
+/api/dashboard/summary
+/api/trades
 ```
 
 ## Test result
 
+- DB backup creation: success
+- Backup file integrity size check: success
 - `python -m compileall app`: success
 - `npm run build`: success
 - `/health`: 200
 - `/api/auth/status`: 200
-- `/api/jobs/summary`: 200
-- `/api/prices/summary`: 200
-- `/api/news/summary`: 200
-- `/api/price-alerts/summary`: 200
-- `/api/news/alerts/send/dry-run`: 200
-- `/api/price-alerts/evaluate/dry-run`: 200
-- Actual Gmail send: not executed
-- New feature check: none
-- New table or migration check: none
+- `/api/funds/summary`: 200
+- `/api/holdings/summary`: 200
+- `/api/portfolio/summary`: 200
+- `/api/dashboard/summary`: 200
+- `/api/trades`: 200
+- Actual operating data input: not performed
+- Actual Gmail send: not performed
 
 ## Incomplete items
 
-- Google OAuth environment values are still missing in the current runtime environment
+- Browser-side final confirmation for `/portfolio`, `/trades`, and `/dashboard` was not completed in this session because of in-app browser timeouts
 
 ## Confirmation-needed items
 
-- Real secret values were intentionally not recorded in any report
-- Actual operational readiness still depends on real SMTP, OpenAI billing/quota, and KRX credential validity at runtime
+- Real fund name, cash amount, holdings, quantity, average price, and buy date are still needed from the user before actual first-operation input
 
 ## Next step suggestions
 
-- Follow `docs/OPERATION_READY_CHECKLIST.md` before first live usage
-- Use the documented backup and restore flow before entering real holdings or trade history
+- Follow `docs/FIRST_OPERATION_DATA_INPUT_GUIDE.md` once real initial values are ready
+- Keep the backup created in this task available until first-operation input and verification are complete
 
 ## Final completion statement
 
-CODEX_TASK_2.1 운영 준비 상태 점검 작업 완료했습니다.
-DEVELOPMENT_REPORT.md와 OPERATION_READY_CHECKLIST.md를 확인해 주세요.
+CODEX_TASK_2.2 첫 운영 데이터 입력 준비 작업 완료했습니다.
+DEVELOPMENT_REPORT.md를 확인해 주세요.
