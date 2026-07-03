@@ -2,47 +2,64 @@
 
 ## Current phase
 
-- Phase: test price alert cleanup after Gmail send verification
-- Task document: `docs/CODEX_TASK_2.10.md`
-- Status: test price alerts removed, verification histories preserved, ready state restored
+- Phase: alerts operation readiness verification
+- Task document: `docs/CODEX_TASK_2.11.md`
+- Status: price alerts and news alerts dry-run verified, UI readiness confirmed, no real send executed
 
 ## Completed major work
 
 - Reviewed only the immediate task context:
   - `docs/DEVELOPMENT_REPORT.md`
-  - `docs/PRICE_ALERT_GMAIL_SEND_TEST_REPORT.md`
-  - `docs/PRICE_ALERT_TEST_REGISTRATION_REPORT.md`
-- Confirmed pre-cleanup baseline:
-  - `price_alerts` row count `2`
-  - enabled alerts `2`
-  - price alert histories `2`
-  - `sent_count = 1`
-  - `skipped_count = 1`
-- Removed only the two test price alerts:
-  - NAVER matched test alert
-  - Samsung SDI non-matched test alert
-- Confirmed post-cleanup state:
-  - `/api/price-alerts` row count `0`
-  - `/api/price-alerts/summary.total_count = 0`
-  - `/api/price-alerts/summary.enabled_count = 0`
-- Confirmed alert-history preservation:
-  - `/api/price-alerts/histories` row count `2`
-  - NAVER `sent` history preserved
-  - Samsung SDI `skipped` history preserved
-  - `/api/price-alerts/summary.sent_count = 1`
-  - `/api/price-alerts/summary.skipped_count = 1`
-- Confirmed ready-state restoration:
-  - dry-run after cleanup returned `evaluated_count = 0`
+  - `docs/PRICE_ALERT_TEST_CLEANUP_REPORT.md`
+  - `docs/PRICE_ALERT_INPUT_GUIDE.md`
+  - `docs/PRICE_ALERT_READY_REPORT.md`
+- Confirmed current price-alert state:
+  - registered price alerts `0`
+  - enabled price alerts `0`
+  - price-alert histories `2`
+  - one `sent` and one `skipped` history preserved
+- Confirmed current price-alert dry-run state:
+  - `evaluated_count = 0`
   - `matched_count = 0`
   - `sendable_count = 0`
   - `sent_count = 0`
   - `failed_count = 0`
+- Confirmed current news-alert source state:
+  - total news `18`
+  - linked stock news `8`
+  - GPT summary target `2`
+  - alert target `2`
+  - average importance score `1.17`
+- Confirmed current GPT processing state:
+  - summary pending `0`
+  - summary done `2`
+  - summary failed `0`
+  - filter pending `16`
+  - filter done `1`
+  - filter failed `1`
+- Confirmed current news-alert summary state:
+  - alert target count `2`
+  - important count `0`
+  - price impact count `1`
+  - high importance count `1`
+- Executed news-alert dry-run only:
+  - `candidate_count = 3`
+  - `sendable_count = 1`
+  - `sent_count = 0`
+  - `failed_count = 0`
+  - `skipped_count = 2`
+  - skipped reason `already_sent = 2`
+- Confirmed no real-send history increase after dry-runs:
+  - price-alert histories remain `2`
+  - news-alert histories remain `2`
 - Verified browser state:
-  - `/alerts` shows total alerts `0`, active alerts `0`, and preserved history rows
-  - `/dashboard` shows `price alert active = 0`, `price alert sent = 1`
+  - `/alerts` shows zero active price alerts and preserved histories
+  - `/dashboard` shows price-alert active `0`, price-alert sent `1`, news alert candidate `2`
+  - `/news` shows total news `18`, summary target `2`, alert candidate `2`
+  - `/settings` shows alert and job-related settings
   - no current `5173` console error found
-- Added `docs/PRICE_ALERT_TEST_CLEANUP_REPORT.md`
-- Added `docs/CODEX_TASK_2.10_REPORT.md`
+- Added `docs/ALERTS_OPERATION_READY_REPORT.md`
+- Added `docs/CODEX_TASK_2.11_REPORT.md`
 
 ## Verification result
 
@@ -50,33 +67,36 @@
 |---|---|
 | `python -m compileall app` | success |
 | `npm run build` | success |
-| `GET /health` | assumed available from running server context |
-| `GET /api/price-alerts` | 200 |
+| `GET /health` | 200 |
 | `GET /api/price-alerts/summary` | 200 |
-| `GET /api/price-alerts/histories` | 200 |
 | `POST /api/price-alerts/evaluate/dry-run` | 200 |
+| `GET /api/news/summary` | 200 |
+| `GET /api/news/alerts/summary` | 200 |
+| `POST /api/news/alerts/send/dry-run` | 200 |
 | `GET /api/dashboard/summary` | 200 |
+| `GET /api/jobs/summary` | 200 |
 | browser `/alerts` | success |
 | browser `/dashboard` | success |
+| browser `/news` | success |
+| browser `/settings` | success |
 
 ## Current validated alert state
 
-- registered test alerts: `0`
-- enabled alerts: `0`
-- sent histories: `1`
-- skipped histories: `1`
-- failed histories: `0`
-- today sent count: `1`
-- hourly sent count: `1`
+- active price alerts: `0`
+- price-alert histories: `2`
+- news-alert histories: `2`
+- news alert candidates summary: `2`
+- news-alert dry-run sendable count: `1`
+- current-turn real sends executed: `0`
 
 ## Confirmation-needed items
 
-- Item: send-verification histories remain intentionally preserved after alert deletion
-- Reason: this task restored registration state only, not audit-history cleanup
-- Recommendation: keep the histories unless a later explicit task asks for separate cleanup policy
-- Current implementation status: cleanup complete, no new alert registered
+- Item: one news-alert dry-run sendable item still exists
+- Reason: dry-run identified one currently sendable news candidate, but this task intentionally did not execute real send
+- Recommendation: if real operation starts later, review the sendable news candidate before any actual send
+- Current implementation status: dry-run only, no new send history created
 
 ## Next step suggestions
 
-- Register only real user alerts from this clean baseline
-- If audit-history retention policy changes later, handle it under a separate explicit task
+- Review the one currently sendable news-alert candidate before any production send action
+- Use the current clean price-alert baseline when real price-alert registration is requested
