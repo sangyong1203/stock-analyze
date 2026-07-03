@@ -2,12 +2,12 @@
 
 ## Work overview
 
-- Latest completed scope: `docs/CODEX_TASK_2.9.md`
-- Scope handled in this task: one real Gmail send test for existing test price alerts, post-send verification, browser confirmation, and reporting
+- Latest completed scope: `docs/CODEX_TASK_2.10.md`
+- Scope handled in this task: test price alert cleanup, preserved-history verification, browser confirmation, and reporting
 - Constraint kept:
-  - real send endpoint executed exactly once
-  - `force=true` not used
-  - no repeated real-send call
+  - no real Gmail send
+  - no call to real send endpoint
+  - alert histories not deleted
   - no portfolio data change
   - no trade edit or delete
   - no holdings direct edit
@@ -17,41 +17,38 @@
 
 ## Reference documents
 
-- `docs/CODEX_TASK_2.9.md`
+- `docs/CODEX_TASK_2.10.md`
 - `docs/DEVELOPMENT_REPORT.md`
+- `docs/PRICE_ALERT_GMAIL_SEND_TEST_REPORT.md`
 - `docs/PRICE_ALERT_TEST_REGISTRATION_REPORT.md`
-- `docs/PRICE_ALERT_READY_REPORT.md`
 - `docs/INVESTMENT_SYSTEM_PLAN_v1.2.md`
 - `docs/MVP_DB_SCHEMA_v1.2.md`
 
 ## Completed work
 
 - Reviewed only the immediately required prior reports for this task
-- Confirmed the existing two test alerts from `2.8`
-- Confirmed pre-send dry-run baseline:
-  - NAVER matched
-  - Samsung SDI not matched
-  - no history rows before send
-- Confirmed required Gmail settings exist without exposing values
-- Executed `POST /api/price-alerts/evaluate` exactly once with `force=false`
-- Verified actual send result:
-  - NAVER sent
-  - Samsung SDI skipped with `condition_not_met`
-  - `sent_count = 1`
-  - `failed_count = 0`
-- Verified `/api/price-alerts/histories` after send:
-  - NAVER `sent` history exists
-  - Samsung SDI `skipped` history exists
-- Verified `/api/price-alerts/summary` and `/api/dashboard/summary` reflect the send result
-- Verified duplicate-send prevention without a second real-send call:
-  - post-send dry-run shows NAVER skipped with `already_sent_today`
-- Verified browser `/dashboard` and `/alerts` reflect the sent/skipped state
+- Confirmed the pre-cleanup baseline:
+  - two test price alerts still registered
+  - one `sent` price-alert history
+  - one `skipped` price-alert history
+- Deleted only the two test price-alert rows:
+  - NAVER test alert
+  - Samsung SDI test alert
+- Verified `/api/price-alerts` and `/api/price-alerts/summary` after cleanup:
+  - total alerts `0`
+  - enabled alerts `0`
+- Verified `/api/price-alerts/histories` remained preserved after deletion
+- Verified `/api/dashboard/summary` reflects:
+  - `price_alert_summary.total_count = 0`
+  - `price_alert_summary.sent_count = 1`
+- Executed dry-run after cleanup and confirmed no current price-alert candidates remain
+- Verified browser `/alerts` and `/dashboard` reflect the cleaned state
 - Re-ran backend compile and frontend build
 
 ## Generated files
 
-- `docs/PRICE_ALERT_GMAIL_SEND_TEST_REPORT.md`
-- `docs/CODEX_TASK_2.9_REPORT.md`
+- `docs/PRICE_ALERT_TEST_CLEANUP_REPORT.md`
+- `docs/CODEX_TASK_2.10_REPORT.md`
 
 ## Modified files
 
@@ -62,32 +59,33 @@
 
 - No backend code change
 - Existing price-alert APIs were used as-is:
-  - `POST /api/price-alerts/evaluate`
-  - `POST /api/price-alerts/evaluate/dry-run`
-  - `GET /api/price-alerts/histories`
+  - `DELETE /api/price-alerts/{alert_id}`
+  - `GET /api/price-alerts`
   - `GET /api/price-alerts/summary`
+  - `GET /api/price-alerts/histories`
+  - `POST /api/price-alerts/evaluate/dry-run`
   - `GET /api/dashboard/summary`
 - Execution result:
-  - one real Gmail send was performed for the matched NAVER alert
-  - the non-matched Samsung SDI alert was recorded as `skipped`
-  - no retry or forced send was executed
+  - test alert rows were removed
+  - send and skip histories remained preserved
+  - no real-send path was executed
 
 ## Frontend implementation result
 
 - No frontend code change
 - `npm run build` passed
-- Browser `/dashboard` confirmed:
-  - `가격 알림 활성 = 2`
-  - `가격 알림 발송 = 1`
-  - recent alert history includes one `sent` NAVER item and one `skipped` Samsung SDI item
 - Browser `/alerts` confirmed:
-  - total alerts `2`
-  - active alerts `2`
+  - total alerts `0`
+  - active alerts `0`
   - today sent `1`
-  - one `sent` history row and one `skipped` history row visible
+  - alert list is empty
+  - one `sent` history row and one `skipped` history row still visible
+- Browser `/dashboard` confirmed:
+  - `가격 알림 활성 = 0`
+  - `가격 알림 발송 = 1`
+  - recent alert history still includes NAVER `sent` and Samsung SDI `skipped`
 - Browser log note:
   - no current `5173` error log found
-  - one stale old `4173` `Failed to fetch` log remains from a previous session
 
 ## DB implementation result
 
@@ -95,7 +93,7 @@
 - No new table
 - No migration
 - Price alert rows after this task:
-  - `2`
+  - `0`
 - Price alert history rows after this task:
   - `2`
     - `1` sent
@@ -119,11 +117,13 @@ npm run build
 Main validation:
 
 ```text
-POST /api/price-alerts/evaluate
-GET /api/price-alerts/histories
+DELETE /api/price-alerts/1
+DELETE /api/price-alerts/2
+GET /api/price-alerts
 GET /api/price-alerts/summary
-GET /api/dashboard/summary
+GET /api/price-alerts/histories
 POST /api/price-alerts/evaluate/dry-run
+GET /api/dashboard/summary
 /alerts
 /dashboard
 ```
@@ -132,48 +132,47 @@ POST /api/price-alerts/evaluate/dry-run
 
 - `python -m compileall app`: success
 - `npm run build`: success
-- `POST /api/price-alerts/evaluate`: 200
-  - `evaluated_count = 2`
-  - `matched_count = 1`
-  - `sendable_count = 1`
-  - `sent_count = 1`
-  - `failed_count = 0`
-  - `skipped_count = 1`
-- `GET /api/price-alerts/histories`: 200
-  - NAVER `sent`
-  - Samsung SDI `skipped`
+- `GET /api/price-alerts`: 200
+  - row count `0`
 - `GET /api/price-alerts/summary`: 200
-  - `total_count = 2`
-  - `enabled_count = 2`
+  - `total_count = 0`
+  - `enabled_count = 0`
   - `sent_count = 1`
   - `failed_count = 0`
   - `skipped_count = 1`
   - `today_sent_count = 1`
-- `GET /api/dashboard/summary`: 200
-  - `price_alert_summary.sent_count = 1`
+- `GET /api/price-alerts/histories`: 200
+  - row count `2`
+  - NAVER `sent`
+  - Samsung SDI `skipped`
 - `POST /api/price-alerts/evaluate/dry-run`: 200
+  - `evaluated_count = 0`
+  - `matched_count = 0`
   - `sendable_count = 0`
-  - NAVER skip reason `already_sent_today`
-  - Samsung SDI skip reason `condition_not_met`
+  - `sent_count = 0`
+  - `failed_count = 0`
+- `GET /api/dashboard/summary`: 200
+  - `price_alert_summary.total_count = 0`
+  - `price_alert_summary.sent_count = 1`
 - Browser `/alerts`: success
 - Browser `/dashboard`: success
 
 ## Incomplete items
 
-- No cleanup/removal of the two test alerts was included in this task
+- No new real alert registration was included in this task
 
 ## Confirmation-needed items
 
-- The two stored alerts are still test alerts, not final user alerts
-- A separate explicit task should decide when to remove or replace them
+- The verification histories remain in place intentionally after cleanup
+- A separate explicit task would be required if history-retention policy needs to change
 
 ## Next step suggestions
 
-- Remove the two test alerts after the Gmail send verification purpose is complete
-- Keep any future real-send revalidation as a separate explicit task with fresh conditions
+- Use the restored clean alert baseline for real user alert registration
+- Keep any future history-cleanup discussion separate from alert registration tasks
 
 ## Final completion statement
 
-CODEX_TASK_2.9 real Gmail send test completed.
-One NAVER test alert was sent once, Samsung SDI remained unsent due to unmet condition, and duplicate-send prevention was verified.
-Check `DEVELOPMENT_REPORT.md` and `PRICE_ALERT_GMAIL_SEND_TEST_REPORT.md`.
+CODEX_TASK_2.10 test price alert cleanup completed.
+The two test alerts were removed and the send-verification histories were preserved.
+Check `DEVELOPMENT_REPORT.md` and `PRICE_ALERT_TEST_CLEANUP_REPORT.md`.

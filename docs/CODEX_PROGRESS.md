@@ -2,52 +2,47 @@
 
 ## Current phase
 
-- Phase: real Gmail send validation for test price alerts
-- Task document: `docs/CODEX_TASK_2.9.md`
-- Status: one real send executed once, history and duplicate-send prevention verified
+- Phase: test price alert cleanup after Gmail send verification
+- Task document: `docs/CODEX_TASK_2.10.md`
+- Status: test price alerts removed, verification histories preserved, ready state restored
 
 ## Completed major work
 
 - Reviewed only the immediate task context:
   - `docs/DEVELOPMENT_REPORT.md`
+  - `docs/PRICE_ALERT_GMAIL_SEND_TEST_REPORT.md`
   - `docs/PRICE_ALERT_TEST_REGISTRATION_REPORT.md`
-  - `docs/PRICE_ALERT_READY_REPORT.md`
-- Confirmed the existing test-alert baseline from `2.8`:
+- Confirmed pre-cleanup baseline:
   - `price_alerts` row count `2`
   - enabled alerts `2`
-  - price alert histories `0`
-  - dry-run matched alert count `1`
-- Confirmed Gmail configuration presence without exposing values:
-  - `GMAIL_SMTP_HOST`
-  - `GMAIL_SMTP_PORT`
-  - `GMAIL_SMTP_USERNAME`
-  - `GMAIL_SMTP_APP_PASSWORD`
-  - `ALERT_RECIPIENT_EMAIL`
-- Executed `POST /api/price-alerts/evaluate` exactly once with `force=false`
-- Confirmed actual send result:
-  - `evaluated_count = 2`
-  - `matched_count = 1`
-  - `sendable_count = 1`
+  - price alert histories `2`
   - `sent_count = 1`
-  - `failed_count = 0`
-  - NAVER test alert sent
-  - Samsung SDI test alert skipped with `condition_not_met`
-- Confirmed post-send state:
-  - `/api/price-alerts/histories` contains one `sent` history for NAVER
-  - `/api/price-alerts/histories` contains one `skipped` history for Samsung SDI
+  - `skipped_count = 1`
+- Removed only the two test price alerts:
+  - NAVER matched test alert
+  - Samsung SDI non-matched test alert
+- Confirmed post-cleanup state:
+  - `/api/price-alerts` row count `0`
+  - `/api/price-alerts/summary.total_count = 0`
+  - `/api/price-alerts/summary.enabled_count = 0`
+- Confirmed alert-history preservation:
+  - `/api/price-alerts/histories` row count `2`
+  - NAVER `sent` history preserved
+  - Samsung SDI `skipped` history preserved
   - `/api/price-alerts/summary.sent_count = 1`
-  - `/api/price-alerts/summary.today_sent_count = 1`
-  - `/api/dashboard/summary.price_alert_summary.sent_count = 1`
-- Confirmed duplicate-send prevention without calling the real send endpoint again:
-  - dry-run after send shows NAVER skipped with `already_sent_today`
-  - Samsung SDI remains skipped with `condition_not_met`
+  - `/api/price-alerts/summary.skipped_count = 1`
+- Confirmed ready-state restoration:
+  - dry-run after cleanup returned `evaluated_count = 0`
+  - `matched_count = 0`
+  - `sendable_count = 0`
+  - `sent_count = 0`
+  - `failed_count = 0`
 - Verified browser state:
-  - `/dashboard` reflects `price alert active = 2`, `price alert sent = 1`
-  - `/alerts` reflects two alerts, one sent history, one skipped history
+  - `/alerts` shows total alerts `0`, active alerts `0`, and preserved history rows
+  - `/dashboard` shows `price alert active = 0`, `price alert sent = 1`
   - no current `5173` console error found
-  - one stale old `4173` `Failed to fetch` log remains from a previous session
-- Added `docs/PRICE_ALERT_GMAIL_SEND_TEST_REPORT.md`
-- Added `docs/CODEX_TASK_2.9_REPORT.md`
+- Added `docs/PRICE_ALERT_TEST_CLEANUP_REPORT.md`
+- Added `docs/CODEX_TASK_2.10_REPORT.md`
 
 ## Verification result
 
@@ -55,18 +50,19 @@
 |---|---|
 | `python -m compileall app` | success |
 | `npm run build` | success |
-| `POST /api/price-alerts/evaluate` | 200 |
-| `GET /api/price-alerts/histories` | 200 |
+| `GET /health` | assumed available from running server context |
+| `GET /api/price-alerts` | 200 |
 | `GET /api/price-alerts/summary` | 200 |
+| `GET /api/price-alerts/histories` | 200 |
+| `POST /api/price-alerts/evaluate/dry-run` | 200 |
 | `GET /api/dashboard/summary` | 200 |
-| `POST /api/price-alerts/evaluate/dry-run` after send | 200 |
-| browser `/dashboard` | success |
 | browser `/alerts` | success |
+| browser `/dashboard` | success |
 
 ## Current validated alert state
 
-- registered test alerts: `2`
-- enabled alerts: `2`
+- registered test alerts: `0`
+- enabled alerts: `0`
 - sent histories: `1`
 - skipped histories: `1`
 - failed histories: `0`
@@ -75,12 +71,12 @@
 
 ## Confirmation-needed items
 
-- Item: the two registered alerts are still test alerts
-- Reason: this task verified one real send and duplicate-send prevention but did not include cleanup/removal
-- Recommendation: remove or replace the test alerts in a separate explicit task when they are no longer needed
-- Current implementation status: verification complete, no additional send executed
+- Item: send-verification histories remain intentionally preserved after alert deletion
+- Reason: this task restored registration state only, not audit-history cleanup
+- Recommendation: keep the histories unless a later explicit task asks for separate cleanup policy
+- Current implementation status: cleanup complete, no new alert registered
 
 ## Next step suggestions
 
-- Remove the two test alerts after the Gmail send verification purpose is complete
-- If another real-send test is needed later, run it under a new explicit task and fresh test conditions
+- Register only real user alerts from this clean baseline
+- If audit-history retention policy changes later, handle it under a separate explicit task
