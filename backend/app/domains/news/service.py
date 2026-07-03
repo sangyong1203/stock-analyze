@@ -35,6 +35,7 @@ from app.external.naver.types import NaverNewsItem
 
 SOURCE_TYPE = "naver_finance_market"
 DUPLICATE_WINDOW_HOURS = 24
+SENDABLE_GPT_FILTER_RESULTS = {"important", "price_impact"}
 
 KEYWORD_RULES: tuple[tuple[int, tuple[str, ...], str], ...] = (
     (5, ("공시",), "disclosure"),
@@ -733,6 +734,8 @@ def _send_units(news: News) -> list[tuple[int | None, str | None]]:
 
 
 def _skip_reason(db: Session, news: News, stock_id: int | None, force: bool) -> str | None:
+    if news.gpt_filter_result not in SENDABLE_GPT_FILTER_RESULTS:
+        return "gpt_filter_not_sendable"
     if repository.get_sent_alert_history(db, news.id, stock_id):
         return "already_sent"
     if not force and repository.get_failed_alert_history(db, news.id, stock_id):

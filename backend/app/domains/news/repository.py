@@ -211,8 +211,8 @@ def alert_summary_counts(db: Session):
 def list_alert_send_candidates(db: Session, limit: int):
     return db.query(News).options(joinedload(News.stock_links)).filter(
         News.is_alert_target.is_(True),
+        News.gpt_filter_result.in_(["important", "price_impact"]),
     ).order_by(
-        News.gpt_filter_result.in_(["important", "price_impact"]).desc(),
         News.importance_score.desc(),
         News.published_at.desc().nullslast(),
         News.id.desc(),
