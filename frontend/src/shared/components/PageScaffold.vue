@@ -1,11 +1,6 @@
 <template>
   <section>
-    <div class="kpi-grid">
-      <article v-for="item in metrics" :key="item.label" class="kpi-item">
-        <span>{{ item.label }}</span>
-        <strong :class="item.tone">{{ item.value }}</strong>
-      </article>
-    </div>
+    <KpiGrid :items="metrics" :columns="4" />
 
     <div class="content-band toolbar">
       <el-input v-model="keyword" placeholder="검색어" clearable />
@@ -43,6 +38,8 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 
+import KpiGrid from './KpiGrid.vue'
+
 defineProps<{
   title: string
   description: string
@@ -61,30 +58,6 @@ const rows = [
 </script>
 
 <style scoped>
-.kpi-grid {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 12px;
-}
-
-.kpi-item {
-  border: 1px solid var(--border);
-  background: var(--surface);
-  padding: 16px;
-}
-
-.kpi-item span {
-  display: block;
-  color: var(--text-muted);
-  font-size: 12px;
-}
-
-.kpi-item strong {
-  display: block;
-  margin-top: 8px;
-  font-size: 22px;
-}
-
 .toolbar {
   display: grid;
   grid-template-columns: minmax(160px, 1fr) 160px auto;
@@ -109,10 +82,6 @@ const rows = [
 }
 
 @media (max-width: 900px) {
-  .kpi-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
   .toolbar {
     grid-template-columns: 1fr;
   }

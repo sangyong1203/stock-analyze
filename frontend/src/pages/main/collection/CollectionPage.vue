@@ -1,31 +1,6 @@
 <template>
   <section class="collection-page">
-    <div class="kpi-grid">
-      <article class="kpi-item">
-        <span>전체 후보</span>
-        <strong>{{ summary?.total_candidate_count ?? 0 }}</strong>
-      </article>
-      <article class="kpi-item">
-        <span>수집 활성</span>
-        <strong>{{ summary?.collect_enabled_count ?? 0 }}</strong>
-      </article>
-      <article class="kpi-item">
-        <span>뉴스 수집</span>
-        <strong>{{ summary?.collect_news_count ?? 0 }}</strong>
-      </article>
-      <article class="kpi-item">
-        <span>알림 대상</span>
-        <strong>{{ summary?.collect_alert_enabled_count ?? 0 }}</strong>
-      </article>
-      <article class="kpi-item">
-        <span>수동 포함</span>
-        <strong>{{ summary?.manual_include_count ?? 0 }}</strong>
-      </article>
-      <article class="kpi-item">
-        <span>수동 제외</span>
-        <strong>{{ summary?.manual_exclude_count ?? 0 }}</strong>
-      </article>
-    </div>
+    <KpiGrid :items="kpiItems" :columns="6" />
 
     <div class="content-band collection-panel">
       <div class="panel-head">
@@ -234,6 +209,8 @@
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 
+import KpiGrid from '@/shared/components/KpiGrid.vue'
+
 import { collectionApi } from './service/collection.api'
 import type { CollectionRule, CollectionStock, CollectionStockSummary } from './service/collection.types'
 import { formatCompactKoreanNumber, formatNumber } from './service/collection.utils'
@@ -289,6 +266,15 @@ const ruleForm = reactive({
 const enabledRuleCount = computed(() => rules.value.filter((rule) => rule.enabled).length)
 const pageStart = computed(() => (totalStocks.value === 0 ? 0 : (pagination.page - 1) * pagination.pageSize + 1))
 const pageEnd = computed(() => Math.min(pagination.page * pagination.pageSize, totalStocks.value))
+const kpiItems = computed(() => [
+  { label: '전체 후보', value: summary.value?.total_candidate_count ?? 0 },
+  { label: '수집 활성', value: summary.value?.collect_enabled_count ?? 0 },
+  { label: '뉴스 수집', value: summary.value?.collect_news_count ?? 0 },
+  { label: '알림 대상', value: summary.value?.collect_alert_enabled_count ?? 0 },
+  { label: '수동 포함', value: summary.value?.manual_include_count ?? 0 },
+  { label: '수동 제외', value: summary.value?.manual_exclude_count ?? 0 },
+])
+
 const ruleTypeSummary = computed(() => {
   const counts = new Map<string, number>()
   for (const rule of rules.value.filter((item) => item.enabled)) {
@@ -588,29 +574,6 @@ onMounted(async () => {
   flex-direction: column;
 }
 
-.kpi-grid {
-  display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
-  gap: 12px;
-}
-
-.kpi-item {
-  border: 1px solid var(--border);
-  background: var(--surface);
-  padding: 16px;
-}
-
-.kpi-item span {
-  display: block;
-  color: var(--text-muted);
-  font-size: 12px;
-}
-
-.kpi-item strong {
-  display: block;
-  margin-top: 8px;
-  font-size: 22px;
-}
 
 .collection-panel {
   display: flex;
@@ -745,10 +708,6 @@ code {
     display: block;
     height: auto;
     overflow: visible;
-  }
-
-  .kpi-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .table-shell {

@@ -1,11 +1,6 @@
 <template>
   <section class="portfolio-page">
-    <div class="summary-grid">
-      <article v-for="card in summaryCards" :key="card.label" class="summary-card">
-        <span>{{ card.label }}</span>
-        <strong :class="card.tone">{{ card.value }}</strong>
-      </article>
-    </div>
+    <KpiGrid :items="summaryCards" :columns="6" spaced />
 
     <div class="content-band portfolio-layout">
       <div class="side-column">
@@ -132,6 +127,8 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
+
+import KpiGrid from '@/shared/components/KpiGrid.vue'
 
 import { portfolioApi } from './service/portfolio.api'
 import type {
@@ -282,33 +279,6 @@ onMounted(loadPortfolio)
 .portfolio-page {
 }
 
-.summary-grid {
-  display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
-  gap: 12px;
-  margin-bottom: 16px;
-}
-
-.summary-card {
-  padding: 16px;
-  border: 1px solid rgba(15, 23, 42, 0.08);
-  border-radius: 16px;
-  background: rgba(255, 255, 255, 0.78);
-}
-
-.summary-card span {
-  display: block;
-  color: #64748b;
-  font-size: 12px;
-  font-weight: 700;
-}
-
-.summary-card strong {
-  display: block;
-  margin-top: 10px;
-  color: #0f172a;
-  font-size: 20px;
-}
 
 .metric-rise {
   color: #dc2626;
@@ -367,17 +337,12 @@ onMounted(loadPortfolio)
 }
 
 @media (max-width: 1200px) {
-  .summary-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-
   .portfolio-layout {
     grid-template-columns: 1fr;
   }
 }
 
 @media (max-width: 760px) {
-  .summary-grid,
   .field-grid {
     grid-template-columns: 1fr;
   }

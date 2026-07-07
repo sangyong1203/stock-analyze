@@ -22,38 +22,7 @@
     </div>
 
     <template v-else-if="summary">
-      <div class="kpi-grid">
-        <article class="kpi-card">
-          <span>총 자산</span>
-          <strong>{{ formatKrw(summary.portfolio_summary.total_asset_value) }}</strong>
-        </article>
-        <article class="kpi-card">
-          <span>현금 잔고</span>
-          <strong>{{ formatKrw(summary.portfolio_summary.total_cash) }}</strong>
-        </article>
-        <article class="kpi-card">
-          <span>평가 손익</span>
-          <strong :class="toneClass(summary.portfolio_summary.total_unrealized_profit_loss)">
-            {{ formatSignedKrw(summary.portfolio_summary.total_unrealized_profit_loss) }}
-          </strong>
-        </article>
-        <article class="kpi-card">
-          <span>평가 손익률</span>
-          <strong :class="toneClass(summary.portfolio_summary.total_unrealized_profit_loss)">
-            {{ formatPercent(summary.portfolio_summary.total_unrealized_profit_loss_rate) }}
-          </strong>
-        </article>
-        <article class="kpi-card">
-          <span>보유 종목</span>
-          <strong>{{ summary.portfolio_summary.holding_count }}</strong>
-        </article>
-        <article class="kpi-card">
-          <span>금일 변동</span>
-          <strong :class="toneClass(summary.portfolio_summary.today_change_amount)">
-            {{ formatSignedKrw(summary.portfolio_summary.today_change_amount) }}
-          </strong>
-        </article>
-      </div>
+      <KpiGrid :items="kpiItems" :columns="6" />
 
       <div class="dashboard-grid">
         <section class="panel">
@@ -302,7 +271,9 @@
 
 <script setup lang="ts">
 import { ElMessage } from 'element-plus'
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
+
+import KpiGrid from '@/shared/components/KpiGrid.vue'
 import { useRouter } from 'vue-router'
 
 import { settingsApi } from '@/pages/main/settings/service/settings.api'
@@ -317,6 +288,19 @@ const loading = ref(false)
 const errorMessage = ref('')
 const summary = ref<DashboardSummary | null>(null)
 const jobSummary = ref<JobSummary | null>(null)
+
+const kpiItems = computed(() => {
+  if (!summary.value) return []
+  const portfolio = summary.value.portfolio_summary
+  return [
+    { label: '총 자산', value: formatKrw(portfolio.total_asset_value) },
+    { label: '현금 잔고', value: formatKrw(portfolio.total_cash) },
+    { label: '평가 손익', value: formatSignedKrw(portfolio.total_unrealized_profit_loss), tone: toneClass(portfolio.total_unrealized_profit_loss) },
+    { label: '평가 손익률', value: formatPercent(portfolio.total_unrealized_profit_loss_rate), tone: toneClass(portfolio.total_unrealized_profit_loss) },
+    { label: '보유 종목', value: portfolio.holding_count },
+    { label: '금일 변동', value: formatSignedKrw(portfolio.today_change_amount), tone: toneClass(portfolio.today_change_amount) },
+  ]
+})
 
 function toneClass(value: string | number | null | undefined) {
   const numeric = toNumber(value)
@@ -407,30 +391,18 @@ onMounted(loadSummary)
   background: var(--surface);
 }
 
-.kpi-grid {
-  display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
-  gap: 12px;
-}
-
-.kpi-card,
 .panel {
   border: 1px solid var(--border);
   background: var(--surface);
 }
 
-.kpi-card {
-  padding: 18px;
-}
 
-.kpi-card span,
 .summary-item span {
   display: block;
   color: var(--text-muted);
   font-size: 12px;
 }
 
-.kpi-card strong,
 .summary-item strong {
   display: block;
   margin-top: 8px;
@@ -552,10 +524,6 @@ onMounted(loadSummary)
 }
 
 @media (max-width: 1200px) {
-  .kpi-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-
   .dashboard-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -573,10 +541,7 @@ onMounted(loadSummary)
   .quick-actions {
     justify-content: flex-start;
   }
-
-  .kpi-grid,
   .dashboard-grid,
-  .summary-grid,
   .dual-list {
     grid-template-columns: 1fr;
   }

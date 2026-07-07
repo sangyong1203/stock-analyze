@@ -1,47 +1,6 @@
 <template>
   <section class="news-page">
-    <div class="kpi-grid">
-      <article class="kpi-item">
-        <span>전체 뉴스</span>
-        <strong>{{ formatNumber(summary?.total_news_count) }}</strong>
-      </article>
-      <article class="kpi-item">
-        <span>오늘 수집</span>
-        <strong>{{ formatNumber(summary?.today_news_count) }}</strong>
-      </article>
-      <article class="kpi-item">
-        <span>종목 연결</span>
-        <strong>{{ formatNumber(summary?.linked_stock_news_count) }}</strong>
-      </article>
-      <article class="kpi-item">
-        <span>요약 대상</span>
-        <strong>{{ formatNumber(summary?.gpt_summary_target_count) }}</strong>
-      </article>
-      <article class="kpi-item">
-        <span>알림 후보</span>
-        <strong>{{ formatNumber(summary?.alert_target_count) }}</strong>
-      </article>
-      <article class="kpi-item">
-        <span>평균 중요도</span>
-        <strong>{{ summary?.avg_importance_score ?? 0 }}</strong>
-      </article>
-      <article class="kpi-item gpt-kpi">
-        <span>요약 완료</span>
-        <strong>{{ formatNumber(gptStatus?.gpt_summary_done_count) }}</strong>
-      </article>
-      <article class="kpi-item gpt-kpi">
-        <span>필터 완료</span>
-        <strong>{{ formatNumber(gptStatus?.gpt_filter_done_count) }}</strong>
-      </article>
-      <article class="kpi-item gpt-kpi">
-        <span>중요/영향</span>
-        <strong>{{ formatNumber((gptStatus?.important_count ?? 0) + (gptStatus?.price_impact_count ?? 0)) }}</strong>
-      </article>
-      <article class="kpi-item alert-kpi">
-        <span>알림 후보</span>
-        <strong>{{ formatNumber(alertSummary?.alert_target_count) }}</strong>
-      </article>
-    </div>
+    <KpiGrid :items="kpiItems" :columns="6" />
 
     <div class="content-band news-panel">
       <div class="panel-head">
@@ -355,7 +314,9 @@
 
 <script setup lang="ts">
 import { ElMessage } from 'element-plus'
-import { onMounted, reactive, ref, watch } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
+
+import KpiGrid from '@/shared/components/KpiGrid.vue'
 
 import { memosApi } from '@/pages/main/memos/service/memos.api'
 import type { Memo, Tag, TagLink } from '@/pages/main/memos/service/memos.types'
@@ -435,6 +396,19 @@ const reviewForm = reactive({
   is_alert_target: false,
   filter_status: '',
 })
+
+const kpiItems = computed(() => [
+  { label: '전체 뉴스', value: formatNumber(summary.value?.total_news_count) },
+  { label: '오늘 수집', value: formatNumber(summary.value?.today_news_count) },
+  { label: '종목 연결', value: formatNumber(summary.value?.linked_stock_news_count) },
+  { label: '요약 대상', value: formatNumber(summary.value?.gpt_summary_target_count) },
+  { label: '알림 후보', value: formatNumber(summary.value?.alert_target_count) },
+  { label: '평균 중요도', value: summary.value?.avg_importance_score ?? 0 },
+  { label: '요약 완료', value: formatNumber(gptStatus.value?.gpt_summary_done_count), cardClass: 'gpt-kpi' },
+  { label: '필터 완료', value: formatNumber(gptStatus.value?.gpt_filter_done_count), cardClass: 'gpt-kpi' },
+  { label: '중요/영향', value: formatNumber((gptStatus.value?.important_count ?? 0) + (gptStatus.value?.price_impact_count ?? 0)), cardClass: 'gpt-kpi' },
+  { label: '알림 후보', value: formatNumber(alertSummary.value?.alert_target_count), cardClass: 'alert-kpi' },
+])
 
 async function loadData() {
   loading.value = true
@@ -712,29 +686,6 @@ onMounted(loadData)
 .news-page {
 }
 
-.kpi-grid {
-  display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
-  gap: 12px;
-}
-
-.kpi-item {
-  border: 1px solid var(--border);
-  background: var(--surface);
-  padding: 16px;
-}
-
-.kpi-item span {
-  display: block;
-  color: var(--text-muted);
-  font-size: 12px;
-}
-
-.kpi-item strong {
-  display: block;
-  margin-top: 8px;
-  font-size: 22px;
-}
 
 .news-panel {
   padding: 16px;
@@ -834,9 +785,6 @@ onMounted(loadData)
 }
 
 @media (max-width: 1100px) {
-  .kpi-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
 
   .panel-head,
   .toolbar,

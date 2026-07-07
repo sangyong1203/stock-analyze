@@ -1,23 +1,6 @@
 <template>
   <section class="settings-page">
-    <div class="kpi-grid">
-      <article class="kpi-item">
-        <span>시스템 설정</span>
-        <strong>{{ appSettings.length }}</strong>
-      </article>
-      <article class="kpi-item">
-        <span>작업 수</span>
-        <strong>{{ jobSummary?.total_count ?? scheduledJobs.length }}</strong>
-      </article>
-      <article class="kpi-item">
-        <span>활성 작업</span>
-        <strong>{{ jobSummary?.enabled_count ?? 0 }}</strong>
-      </article>
-      <article class="kpi-item">
-        <span>실패 작업</span>
-        <strong>{{ jobSummary?.failed_count ?? 0 }}</strong>
-      </article>
-    </div>
+    <KpiGrid :items="kpiItems" :columns="4" />
 
     <div class="content-band settings-panel">
       <div class="panel-head">
@@ -184,7 +167,9 @@
 
 <script setup lang="ts">
 import { ElMessage } from 'element-plus'
-import { onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
+
+import KpiGrid from '@/shared/components/KpiGrid.vue'
 
 import { settingsApi } from './service/settings.api'
 import type { AlertSetting, AppSetting, JobSummary, NewsKeyword, ScheduledJob } from './service/settings.types'
@@ -207,6 +192,13 @@ const keywordDraft = reactive({
   enabled: true,
   is_default: false,
 })
+
+const kpiItems = computed(() => [
+  { label: '시스템 설정', value: appSettings.value.length },
+  { label: '작업 수', value: jobSummary.value?.total_count ?? scheduledJobs.value.length },
+  { label: '활성 작업', value: jobSummary.value?.enabled_count ?? 0 },
+  { label: '실패 작업', value: jobSummary.value?.failed_count ?? 0 },
+])
 
 function formatDateTime(value: string | null | undefined) {
   if (!value) return '-'
@@ -334,29 +326,6 @@ onMounted(loadSettings)
 .settings-page {
 }
 
-.kpi-grid {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 12px;
-}
-
-.kpi-item {
-  border: 1px solid var(--border);
-  background: var(--surface);
-  padding: 16px;
-}
-
-.kpi-item span {
-  display: block;
-  color: var(--text-muted);
-  font-size: 12px;
-}
-
-.kpi-item strong {
-  display: block;
-  margin-top: 8px;
-  font-size: 22px;
-}
 
 .settings-panel {
   padding: 16px;
@@ -409,9 +378,6 @@ code {
 }
 
 @media (max-width: 900px) {
-  .kpi-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
 
   .panel-head,
   .keyword-form {

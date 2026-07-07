@@ -1,23 +1,6 @@
 <template>
   <section class="stocks-page">
-    <div class="kpi-grid">
-      <article class="kpi-item">
-        <span>표시 종목</span>
-        <strong>{{ stocks.length }}</strong>
-      </article>
-      <article class="kpi-item">
-        <span>관심 종목</span>
-        <strong>{{ favoriteCount }}</strong>
-      </article>
-      <article class="kpi-item">
-        <span>보유 종목</span>
-        <strong>{{ holdingCount }}</strong>
-      </article>
-      <article class="kpi-item">
-        <span>활성 종목</span>
-        <strong>{{ activeCount }}</strong>
-      </article>
-    </div>
+    <KpiGrid :items="kpiItems" :columns="4" />
 
     <div class="content-band stocks-panel">
       <div class="panel-head">
@@ -129,6 +112,8 @@
 import { ElMessage } from 'element-plus'
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 
+import KpiGrid from '@/shared/components/KpiGrid.vue'
+
 import { pricesApi } from './service/prices.api'
 import { stocksApi } from './service/stocks.api'
 import { stockToPayload } from './service/stocks.mapper'
@@ -166,6 +151,13 @@ const form = reactive<StockPayload>({
 const favoriteCount = computed(() => stocks.value.filter((stock) => stock.is_favorite).length)
 const holdingCount = computed(() => stocks.value.filter((stock) => stock.is_holding).length)
 const activeCount = computed(() => stocks.value.filter((stock) => stock.is_active).length)
+
+const kpiItems = computed(() => [
+  { label: '표시 종목', value: stocks.value.length },
+  { label: '관심 종목', value: favoriteCount.value },
+  { label: '보유 종목', value: holdingCount.value },
+  { label: '활성 종목', value: activeCount.value },
+])
 
 async function loadStocks() {
   loading.value = true
@@ -288,29 +280,6 @@ onMounted(loadStocks)
 .stocks-page {
 }
 
-.kpi-grid {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 12px;
-}
-
-.kpi-item {
-  border: 1px solid var(--border);
-  background: var(--surface);
-  padding: 16px;
-}
-
-.kpi-item span {
-  display: block;
-  color: var(--text-muted);
-  font-size: 12px;
-}
-
-.kpi-item strong {
-  display: block;
-  margin-top: 8px;
-  font-size: 22px;
-}
 
 .stocks-panel {
   padding: 16px;
@@ -350,9 +319,6 @@ onMounted(loadStocks)
 }
 
 @media (max-width: 900px) {
-  .kpi-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
 
   .panel-head,
   .toolbar,

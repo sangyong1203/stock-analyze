@@ -1,23 +1,6 @@
 <template>
   <section class="alerts-page">
-    <div class="kpi-grid">
-      <article class="kpi-item">
-        <span>전체 알림</span>
-        <strong>{{ summary?.total_count ?? 0 }}</strong>
-      </article>
-      <article class="kpi-item">
-        <span>활성 알림</span>
-        <strong>{{ summary?.enabled_count ?? 0 }}</strong>
-      </article>
-      <article class="kpi-item">
-        <span>오늘 발송</span>
-        <strong>{{ summary?.today_sent_count ?? 0 }}</strong>
-      </article>
-      <article class="kpi-item">
-        <span>최근 1시간 발송</span>
-        <strong>{{ summary?.hourly_sent_count ?? 0 }}</strong>
-      </article>
-    </div>
+    <KpiGrid :items="kpiItems" :columns="4" spaced />
 
     <div class="content-band alerts-layout">
       <section class="panel-card">
@@ -237,6 +220,8 @@
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 
+import KpiGrid from '@/shared/components/KpiGrid.vue'
+
 import { ALERT_TYPE_OPTIONS } from './service/alerts.constants'
 import { alertsApi } from './service/alerts.api'
 import { alertToPayload } from './service/alerts.mapper'
@@ -277,6 +262,13 @@ const evaluationForm = reactive({
   limit: 20,
   force: false,
 })
+
+const kpiItems = computed(() => [
+  { label: '전체 알림', value: summary.value?.total_count ?? 0 },
+  { label: '활성 알림', value: summary.value?.enabled_count ?? 0 },
+  { label: '오늘 발송', value: summary.value?.today_sent_count ?? 0 },
+  { label: '최근 1시간 발송', value: summary.value?.hourly_sent_count ?? 0 },
+])
 
 const isRangeAlert = computed(() => form.alert_type === 'DROP_FROM_HIGH' || form.alert_type === 'RISE_FROM_LOW')
 
@@ -472,33 +464,6 @@ onMounted(loadData)
 .alerts-page {
 }
 
-.kpi-grid {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 12px;
-  margin-bottom: 16px;
-}
-
-.kpi-item {
-  padding: 16px;
-  border: 1px solid rgba(15, 23, 42, 0.08);
-  border-radius: 16px;
-  background: rgba(255, 255, 255, 0.82);
-}
-
-.kpi-item span {
-  display: block;
-  color: #64748b;
-  font-size: 12px;
-  font-weight: 700;
-}
-
-.kpi-item strong {
-  display: block;
-  margin-top: 10px;
-  color: #0f172a;
-  font-size: 22px;
-}
 
 .alerts-layout {
   display: grid;
@@ -583,7 +548,6 @@ onMounted(loadData)
 }
 
 @media (max-width: 900px) {
-  .kpi-grid,
   .field-grid,
   .result-grid {
     grid-template-columns: 1fr;
