@@ -11,6 +11,7 @@ from app.domains.collection import repository
 from app.domains.collection.schemas import (
     CollectionRuleCreate,
     CollectionRuleUpdate,
+    CollectionStockListResponse,
     CollectionStockRead,
     CollectionStockSummary,
     CollectionStockUpdate,
@@ -202,8 +203,15 @@ def _setting_or_default(stock: Stock, setting: StockCollectionSetting | None, is
 
 
 def get_collection_stocks(db: Session, **filters):
-    rows = repository.list_collection_stocks(db, **filters)
-    return [_setting_or_default(stock, setting, is_holding) for stock, setting, is_holding in rows]
+    page = filters.get("page", 1)
+    page_size = filters.get("page_size", 50)
+    rows, total_count = repository.list_collection_stocks(db, **filters)
+    return CollectionStockListResponse(
+        items=[_setting_or_default(stock, setting, is_holding) for stock, setting, is_holding in rows],
+        total_count=total_count,
+        page=page,
+        page_size=page_size,
+    )
 
 
 def get_collection_stocks_summary(db: Session) -> CollectionStockSummary:

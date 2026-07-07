@@ -110,6 +110,13 @@ class CollectionStockSummary(BaseModel):
     manual_exclude_count: int
 
 
+class CollectionStockListResponse(BaseModel):
+    items: list[CollectionStockRead]
+    total_count: int
+    page: int
+    page_size: int
+
+
 class RecalculateResult(BaseModel):
     processed_count: int
     collect_enabled_count: int

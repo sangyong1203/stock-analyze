@@ -76,6 +76,8 @@ def list_collection_stocks(
     index_code: str | None = None,
     is_favorite: bool | None = None,
     keyword: str | None = None,
+    page: int = 1,
+    page_size: int = 50,
 ):
     holding_exists = exists().where(
         Holding.stock_id == Stock.id,
@@ -110,7 +112,9 @@ def list_collection_stocks(
         like = f"%{keyword.strip()}%"
         query = query.filter(or_(Stock.code.like(like), Stock.name.like(like), Stock.sector.like(like)))
 
-    return query.order_by(Stock.code).limit(1000).all()
+    total_count = query.count()
+    rows = query.order_by(Stock.code).offset((page - 1) * page_size).limit(page_size).all()
+    return rows, total_count
 
 
 def collection_summary_counts(db: Session):

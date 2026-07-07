@@ -51,7 +51,18 @@ export interface CollectionFilters {
   collect_enabled?: boolean
   priority?: string
   collect_reason?: string
+  page?: number
+  page_size?: number
 }
+
+export interface CollectionStockListResponse {
+  items: CollectionStock[]
+  total_count: number
+  page: number
+  page_size: number
+}
+
+export type CollectionStockListApiResponse = CollectionStockListResponse | CollectionStock[]
 
 export interface RecalculateResult {
   processed_count: number

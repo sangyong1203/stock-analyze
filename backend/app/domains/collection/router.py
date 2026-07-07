@@ -7,6 +7,7 @@ from app.domains.collection.schemas import (
     CollectionRuleCreate,
     CollectionRuleRead,
     CollectionRuleUpdate,
+    CollectionStockListResponse,
     CollectionStockRead,
     CollectionStockSummary,
     CollectionStockUpdate,
@@ -49,7 +50,7 @@ def index_constituents_summary(db: Session = Depends(get_db)):
     return ok(get_index_constituents_summary(db))
 
 
-@router.get("/stocks", response_model=list[CollectionStockRead])
+@router.get("/stocks", response_model=CollectionStockListResponse)
 def list_collection_stocks(
     collect_enabled: bool | None = None,
     collect_news: bool | None = None,
@@ -60,6 +61,8 @@ def list_collection_stocks(
     index_code: str | None = None,
     is_favorite: bool | None = None,
     keyword: str | None = None,
+    page: int = 1,
+    page_size: int = 50,
     db: Session = Depends(get_db),
 ):
     return get_collection_stocks(
@@ -73,6 +76,8 @@ def list_collection_stocks(
         index_code=index_code,
         is_favorite=is_favorite,
         keyword=keyword,
+        page=page,
+        page_size=page_size,
     )
 
 

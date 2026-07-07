@@ -29,9 +29,9 @@
 
     <div class="content-band collection-panel">
       <div class="panel-head">
-        <div>
+        <div class="panel-head-title">
           <h2 class="section-title">수집 종목 관리</h2>
-          <p class="muted">KODEX 구성종목, 보유, 관심, 알림, 조건 규칙 기준으로 최종 수집 대상을 관리합니다.</p>
+          <p class="panel-description">KODEX 구성종목, 보유, 관심, 알림, 조건 규칙 기준으로 최종 수집 대상을 관리합니다.</p>
         </div>
         <div class="panel-actions">
           <el-button plain @click="openRulesDialog">수집 조건 규칙</el-button>
@@ -55,15 +55,32 @@
           <el-option label="low" value="low" />
         </el-select>
         <el-select v-model="filters.collect_reason" placeholder="수집 사유" clearable>
-          <el-option v-for="reason in reasons" :key="reason" :label="reason" :value="reason" />
+          <el-option v-for="reason in reasons" :key="reason.value" :label="reason.label" :value="reason.value" />
         </el-select>
         <el-button :loading="loading" @click="loadData">조회</el-button>
+      </div>
+
+      <div class="quick-filters">
+        <span class="quick-filters-label">빠른 사유 필터</span>
+        <el-check-tag
+          v-for="reason in reasons"
+          :key="reason.value"
+          :checked="filters.collect_reason === reason.value"
+          @change="toggleReasonFilter(reason.value)"
+        >
+          {{ reason.label }}
+        </el-check-tag>
       </div>
 
       <div class="rules-summary">
         <span class="rules-summary-label">활성 규칙</span>
         <strong>{{ enabledRuleCount }}</strong>
         <span class="muted">총 {{ rules.length }}개</span>
+        <div class="rules-summary-tags">
+          <el-tag v-for="item in ruleTypeSummary" :key="item.type" effect="plain" round>
+            {{ item.label }} {{ item.count }}
+          </el-tag>
+        </div>
       </div>
 
       <el-alert v-if="errorMessage" :title="errorMessage" type="error" show-icon :closable="false" />
@@ -74,39 +91,66 @@
         <el-table-column prop="market" label="시장" width="100" />
         <el-table-column prop="sector" label="섹터" min-width="130" />
         <el-table-column label="시총" min-width="120" align="right">
-          <template #default="{ row }">{{ formatNumber(row.market_cap) }}</template>
+          <template #default="{ row }">
+            <span :title="formatNumber(row.market_cap)">{{ formatCompactKoreanNumber(row.market_cap) }}</span>
+          </template>
         </el-table-column>
-        <el-table-column label="보유/관심" width="120">
+        <el-table-column label="분류" min-width="180">
           <template #default="{ row }">
             <el-tag v-if="row.is_holding_calculated" type="success" effect="plain">보유</el-tag>
             <el-tag v-else-if="row.is_favorite" type="warning" effect="plain">관심</el-tag>
+            <el-tag v-if="row.manual_include" type="primary" effect="plain">수동 포함</el-tag>
+            <el-tag v-if="row.manual_exclude" type="danger" effect="plain">수동 제외</el-tag>
+            <span v-if="!row.is_holding_calculated && !row.is_favorite && !row.manual_include && !row.manual_exclude" class="muted">-</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="사유" width="150">
+          <template #default="{ row }">
+            <el-tag v-if="row.collect_reason" :type="reasonTagType(row.collect_reason)" effect="light" round>
+              {{ reasonLabel(row.collect_reason) }}
+            </el-tag>
             <span v-else class="muted">-</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="우선순위" width="110">
+          <template #default="{ row }">
+            <el-tag :type="priorityTagType(row.priority)" effect="plain" round>{{ priorityLabel(row.priority) }}</el-tag>
           </template>
         </el-table-column>
         <el-table-column label="수집" width="90">
           <template #default="{ row }">
-            <el-switch v-model="row.collect_enabled" @change="saveSetting(row)" />
+            <el-switch v-model="row.collect_enabled" :loading="isRowSaving(row.stock_id)" :disabled="isRowSaving(row.stock_id)" @change="saveSetting(row)" />
           </template>
         </el-table-column>
         <el-table-column label="뉴스" width="90">
           <template #default="{ row }">
-            <el-switch v-model="row.collect_news" @change="saveSetting(row)" />
+            <el-switch v-model="row.collect_news" :loading="isRowSaving(row.stock_id)" :disabled="isRowSaving(row.stock_id)" @change="saveSetting(row)" />
           </template>
         </el-table-column>
         <el-table-column label="알림" width="90">
           <template #default="{ row }">
-            <el-switch v-model="row.collect_alert_enabled" @change="saveSetting(row)" />
+            <el-switch v-model="row.collect_alert_enabled" :loading="isRowSaving(row.stock_id)" :disabled="isRowSaving(row.stock_id)" @change="saveSetting(row)" />
           </template>
         </el-table-column>
-        <el-table-column prop="priority" label="우선순위" width="100" />
-        <el-table-column prop="collect_reason" label="사유" width="140" />
-        <el-table-column label="수동" width="170">
+        <el-table-column label="수동" width="150">
           <template #default="{ row }">
-            <el-button link type="primary" @click="includeStock(row)">포함</el-button>
-            <el-button link type="danger" @click="excludeStock(row)">제외</el-button>
+            <el-button link type="primary" :disabled="row.manual_include || isRowSaving(row.stock_id)" @click="includeStock(row)">포함</el-button>
+            <el-button link type="danger" :disabled="row.manual_exclude || isRowSaving(row.stock_id)" @click="excludeStock(row)">제외</el-button>
           </template>
         </el-table-column>
       </el-table>
+
+      <div class="table-footer">
+        <span class="muted">총 {{ totalStocks }}건 중 {{ pageStart }}-{{ pageEnd }}건 표시</span>
+        <el-pagination
+          v-model:current-page="pagination.page"
+          v-model:page-size="pagination.pageSize"
+          background
+          layout="prev, pager, next, sizes"
+          :total="totalStocks"
+          :page-sizes="[50, 100, 200]"
+        />
+      </div>
     </div>
 
     <el-dialog v-model="rulesDialogVisible" title="수집 조건 규칙 설정" width="960px" destroy-on-close>
@@ -190,7 +234,7 @@ import { computed, onMounted, reactive, ref, watch } from 'vue'
 
 import { collectionApi } from './service/collection.api'
 import type { CollectionRule, CollectionStock, CollectionStockSummary } from './service/collection.types'
-import { formatNumber } from './service/collection.utils'
+import { formatCompactKoreanNumber, formatNumber } from './service/collection.utils'
 
 const loading = ref(false)
 const recalculating = ref(false)
@@ -203,13 +247,27 @@ const enabledFilter = ref('')
 const rulesDialogVisible = ref(false)
 const editingRuleId = ref<number | null>(null)
 const ruleConditionText = ref('{}')
+const savingRowIds = ref<number[]>([])
+const totalStocks = ref(0)
 
-const reasons = ['manual_exclude', 'manual_include', 'holding', 'favorite', 'alert', 'index_rule', 'market_cap_rule']
+const reasons = [
+  { value: 'manual_include', label: '수동 포함' },
+  { value: 'manual_exclude', label: '수동 제외' },
+  { value: 'holding', label: '보유' },
+  { value: 'favorite', label: '관심' },
+  { value: 'alert', label: '알림' },
+  { value: 'index_rule', label: '지수 규칙' },
+  { value: 'market_cap_rule', label: '시총 규칙' },
+]
 const filters = reactive({
   keyword: '',
   market: '',
   priority: '',
   collect_reason: '',
+})
+const pagination = reactive({
+  page: 1,
+  pageSize: 50,
 })
 
 const ruleForm = reactive({
@@ -220,30 +278,56 @@ const ruleForm = reactive({
 })
 
 const enabledRuleCount = computed(() => rules.value.filter((rule) => rule.enabled).length)
+const pageStart = computed(() => (totalStocks.value === 0 ? 0 : (pagination.page - 1) * pagination.pageSize + 1))
+const pageEnd = computed(() => Math.min(pagination.page * pagination.pageSize, totalStocks.value))
+const ruleTypeSummary = computed(() => {
+  const counts = new Map<string, number>()
+  for (const rule of rules.value.filter((item) => item.enabled)) {
+    counts.set(rule.rule_type, (counts.get(rule.rule_type) ?? 0) + 1)
+  }
+
+  return Array.from(counts.entries()).map(([type, count]) => ({
+    type,
+    count,
+    label: ruleTypeLabel(type),
+  }))
+})
 
 async function loadData() {
   loading.value = true
   errorMessage.value = ''
   try {
     const collectEnabled = enabledFilter.value === '' ? undefined : enabledFilter.value === 'true'
-    const [stockRows, summaryData, ruleRows] = await Promise.all([
-      collectionApi.listStocks({
-        keyword: filters.keyword || undefined,
-        market: filters.market || undefined,
-        priority: filters.priority || undefined,
-        collect_reason: filters.collect_reason || undefined,
-        collect_enabled: collectEnabled,
-      }),
-      collectionApi.summary(),
-      collectionApi.listRules(),
-    ])
-    stocks.value = stockRows
-    summary.value = summaryData
-    rules.value = ruleRows
+    const stockResponse = await collectionApi.listStocks({
+      keyword: filters.keyword || undefined,
+      market: filters.market || undefined,
+      priority: filters.priority || undefined,
+      collect_reason: filters.collect_reason || undefined,
+      collect_enabled: collectEnabled,
+      page: pagination.page,
+      page_size: pagination.pageSize,
+    })
+    if (Array.isArray(stockResponse)) {
+      stocks.value = stockResponse
+      totalStocks.value = stockResponse.length
+    } else {
+      stocks.value = stockResponse.items
+      totalStocks.value = stockResponse.total_count
+    }
   } catch (error) {
     errorMessage.value = error instanceof Error ? error.message : '수집 종목 정보를 불러오지 못했습니다.'
   } finally {
     loading.value = false
+  }
+}
+
+async function loadMeta() {
+  try {
+    const [summaryData, ruleRows] = await Promise.all([collectionApi.summary(), collectionApi.listRules()])
+    summary.value = summaryData
+    rules.value = ruleRows
+  } catch (error) {
+    errorMessage.value = error instanceof Error ? error.message : '수집 요약 정보를 불러오지 못했습니다.'
   }
 }
 
@@ -276,28 +360,98 @@ function startEditRule(row: CollectionRule) {
   ruleConditionText.value = JSON.stringify(row.condition_json ?? {}, null, 2)
 }
 
+function toggleReasonFilter(reason: string) {
+  filters.collect_reason = filters.collect_reason === reason ? '' : reason
+}
+
+function resetToFirstPage() {
+  pagination.page = 1
+}
+
+function isRowSaving(stockId: number) {
+  return savingRowIds.value.includes(stockId)
+}
+
+function setRowSaving(stockId: number, saving: boolean) {
+  if (saving) {
+    if (!savingRowIds.value.includes(stockId)) {
+      savingRowIds.value = [...savingRowIds.value, stockId]
+    }
+    return
+  }
+  savingRowIds.value = savingRowIds.value.filter((id) => id !== stockId)
+}
+
+function priorityLabel(priority?: string | null) {
+  if (priority === 'high') return '높음'
+  if (priority === 'normal') return '보통'
+  return '낮음'
+}
+
+function priorityTagType(priority?: string | null) {
+  if (priority === 'high') return 'danger'
+  if (priority === 'normal') return 'warning'
+  return 'info'
+}
+
+function reasonLabel(reason?: string | null) {
+  return reasons.find((item) => item.value === reason)?.label ?? reason ?? '-'
+}
+
+function reasonTagType(reason?: string | null) {
+  if (reason === 'manual_include') return 'primary'
+  if (reason === 'manual_exclude') return 'danger'
+  if (reason === 'holding') return 'success'
+  if (reason === 'favorite' || reason === 'alert') return 'warning'
+  return 'info'
+}
+
+function ruleTypeLabel(type: string) {
+  if (type === 'index') return '지수'
+  if (type === 'index_member') return '지수 편입'
+  if (type === 'market_cap') return '시총'
+  if (type === 'market') return '시장'
+  if (type === 'sector') return '섹터'
+  return type
+}
+
 async function saveSetting(row: CollectionStock) {
-  await collectionApi.updateStock(row.stock_id, {
-    collect_enabled: row.collect_enabled,
-    collect_news: row.collect_news,
-    collect_price_snapshot: row.collect_price_snapshot,
-    collect_alert_enabled: row.collect_alert_enabled,
-    priority: row.priority,
-    collect_reason: row.collect_reason,
-  })
-  await loadData()
+  setRowSaving(row.stock_id, true)
+  try {
+    await collectionApi.updateStock(row.stock_id, {
+      collect_enabled: row.collect_enabled,
+      collect_news: row.collect_news,
+      collect_price_snapshot: row.collect_price_snapshot,
+      collect_alert_enabled: row.collect_alert_enabled,
+      priority: row.priority,
+      collect_reason: row.collect_reason,
+    })
+    await loadData()
+  } finally {
+    setRowSaving(row.stock_id, false)
+  }
 }
 
 async function includeStock(row: CollectionStock) {
-  await collectionApi.includeStock(row.stock_id)
-  ElMessage.success('수동 포함 처리했습니다.')
-  await loadData()
+  setRowSaving(row.stock_id, true)
+  try {
+    await collectionApi.includeStock(row.stock_id)
+    ElMessage.success('수동 포함 처리했습니다.')
+    await loadData()
+  } finally {
+    setRowSaving(row.stock_id, false)
+  }
 }
 
 async function excludeStock(row: CollectionStock) {
-  await collectionApi.excludeStock(row.stock_id)
-  ElMessage.success('수동 제외 처리했습니다.')
-  await loadData()
+  setRowSaving(row.stock_id, true)
+  try {
+    await collectionApi.excludeStock(row.stock_id)
+    ElMessage.success('수동 제외 처리했습니다.')
+    await loadData()
+  } finally {
+    setRowSaving(row.stock_id, false)
+  }
 }
 
 async function recalculate() {
@@ -305,6 +459,7 @@ async function recalculate() {
   try {
     const result = await collectionApi.recalculate()
     ElMessage.success(`재계산 완료: ${result.collect_enabled_count}개 수집 대상`)
+    await loadMeta()
     await loadData()
   } finally {
     recalculating.value = false
@@ -314,7 +469,7 @@ async function recalculate() {
 async function toggleRule(row: CollectionRule) {
   await collectionApi.updateRule(row.id, { enabled: row.enabled })
   ElMessage.success('규칙 상태를 변경했습니다.')
-  await loadData()
+  await loadMeta()
 }
 
 function parseRuleCondition() {
@@ -349,7 +504,7 @@ async function submitRule() {
       ElMessage.success('규칙을 등록했습니다.')
     }
 
-    await loadData()
+    await loadMeta()
     resetRuleForm()
   } catch (error) {
     ElMessage.error(error instanceof Error ? error.message : '규칙 저장 중 오류가 발생했습니다.')
@@ -370,15 +525,40 @@ async function removeRule(row: CollectionRule) {
   if (editingRuleId.value === row.id) {
     resetRuleForm()
   }
-  await loadData()
+  await loadMeta()
 }
 
-watch(() => filters.market, loadData)
-watch(() => filters.priority, loadData)
-watch(() => filters.collect_reason, loadData)
-watch(enabledFilter, loadData)
+watch(() => filters.market, () => {
+  resetToFirstPage()
+  void loadData()
+})
+watch(() => filters.priority, () => {
+  resetToFirstPage()
+  void loadData()
+})
+watch(() => filters.collect_reason, () => {
+  resetToFirstPage()
+  void loadData()
+})
+watch(enabledFilter, () => {
+  resetToFirstPage()
+  void loadData()
+})
+watch(() => pagination.page, () => {
+  void loadData()
+})
+watch(() => pagination.pageSize, () => {
+  if (pagination.page !== 1) {
+    pagination.page = 1
+    return
+  }
+  void loadData()
+})
 
-onMounted(loadData)
+onMounted(async () => {
+  await loadMeta()
+  await loadData()
+})
 </script>
 
 <style scoped>
@@ -416,14 +596,24 @@ onMounted(loadData)
 
 .panel-head {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: 12px;
   margin-bottom: 14px;
 }
 
-.panel-head p {
-  margin: 6px 0 0;
+.panel-head-title {
+  display: flex;
+  gap: 14px;
+  align-items: baseline;
+  flex-wrap: wrap;
+}
+
+.panel-description {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 1.4;
 }
 
 .panel-actions {
@@ -438,9 +628,23 @@ onMounted(loadData)
   margin-bottom: 12px;
 }
 
+.quick-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.quick-filters-label {
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
 .rules-summary {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 10px;
   margin-bottom: 12px;
   padding: 14px 16px;
@@ -458,10 +662,24 @@ onMounted(loadData)
   font-size: 24px;
 }
 
+.rules-summary-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 .rules-dialog {
   display: grid;
   grid-template-columns: minmax(0, 1.25fr) minmax(320px, 0.95fr);
   gap: 18px;
+}
+
+.table-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 14px;
 }
 
 .rules-dialog-toolbar {
@@ -504,14 +722,28 @@ code {
   .panel-head,
   .toolbar,
   .panel-actions,
-  .rules-dialog {
+  .rules-dialog,
+  .table-footer {
     display: block;
+  }
+
+  .panel-head-title {
+    display: block;
+    margin-bottom: 8px;
+  }
+
+  .panel-description {
+    margin-top: 6px;
   }
 
   .toolbar > *,
   .panel-actions > * {
     margin-bottom: 8px;
     width: 100%;
+  }
+
+  .quick-filters {
+    align-items: flex-start;
   }
 
   .rules-dialog-form {

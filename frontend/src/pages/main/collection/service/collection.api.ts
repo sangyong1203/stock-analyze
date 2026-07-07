@@ -1,6 +1,14 @@
 import { apiRequest } from '@/shared/utils/http'
 
-import type { CollectionFilters, CollectionRule, CollectionStock, CollectionStockSummary, RecalculateResult } from './collection.types'
+import type {
+  CollectionFilters,
+  CollectionRule,
+  CollectionStock,
+  CollectionStockListApiResponse,
+  CollectionStockListResponse,
+  CollectionStockSummary,
+  RecalculateResult,
+} from './collection.types'
 
 function toQuery(filters: CollectionFilters) {
   const params = new URLSearchParams()
@@ -9,13 +17,15 @@ function toQuery(filters: CollectionFilters) {
   if (filters.collect_enabled !== undefined) params.set('collect_enabled', String(filters.collect_enabled))
   if (filters.priority) params.set('priority', filters.priority)
   if (filters.collect_reason) params.set('collect_reason', filters.collect_reason)
+  if (filters.page) params.set('page', String(filters.page))
+  if (filters.page_size) params.set('page_size', String(filters.page_size))
   const query = params.toString()
   return query ? `?${query}` : ''
 }
 
 export const collectionApi = {
   rulesUrl: '/api/collection/rules',
-  listStocks: (filters: CollectionFilters) => apiRequest<CollectionStock[]>(`/api/collection/stocks${toQuery(filters)}`),
+  listStocks: (filters: CollectionFilters) => apiRequest<CollectionStockListApiResponse>(`/api/collection/stocks${toQuery(filters)}`),
   summary: () => apiRequest<CollectionStockSummary>('/api/collection/stocks/summary'),
   updateStock: (stockId: number, payload: Partial<CollectionStock>) =>
     apiRequest<CollectionStock>(`/api/collection/stocks/${stockId}`, {
