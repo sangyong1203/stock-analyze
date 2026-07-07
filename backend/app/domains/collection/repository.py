@@ -95,13 +95,25 @@ def list_collection_stocks(
             IndexConstituent.is_active.is_(True),
         )
     if collect_enabled is not None:
-        query = query.filter(StockCollectionSetting.collect_enabled.is_(collect_enabled))
+        if collect_enabled:
+            query = query.filter(StockCollectionSetting.collect_enabled.is_(True))
+        else:
+            query = query.filter(or_(StockCollectionSetting.collect_enabled.is_(False), StockCollectionSetting.id.is_(None)))
     if collect_news is not None:
-        query = query.filter(StockCollectionSetting.collect_news.is_(collect_news))
+        if collect_news:
+            query = query.filter(StockCollectionSetting.collect_news.is_(True))
+        else:
+            query = query.filter(or_(StockCollectionSetting.collect_news.is_(False), StockCollectionSetting.id.is_(None)))
     if collect_alert_enabled is not None:
-        query = query.filter(StockCollectionSetting.collect_alert_enabled.is_(collect_alert_enabled))
+        if collect_alert_enabled:
+            query = query.filter(StockCollectionSetting.collect_alert_enabled.is_(True))
+        else:
+            query = query.filter(or_(StockCollectionSetting.collect_alert_enabled.is_(False), StockCollectionSetting.id.is_(None)))
     if priority:
-        query = query.filter(StockCollectionSetting.priority == priority)
+        if priority == "low":
+            query = query.filter(or_(StockCollectionSetting.priority == priority, StockCollectionSetting.id.is_(None)))
+        else:
+            query = query.filter(StockCollectionSetting.priority == priority)
     if collect_reason:
         query = query.filter(StockCollectionSetting.collect_reason == collect_reason)
     if market:

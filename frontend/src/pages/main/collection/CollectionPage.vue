@@ -40,7 +40,13 @@
       </div>
 
       <div class="toolbar">
-        <el-input v-model="filters.keyword" placeholder="종목명, 종목코드, 섹터 검색" clearable @keyup.enter="loadData" />
+        <el-input
+          v-model="filters.keyword"
+          placeholder="종목명, 종목코드, 섹터 검색"
+          clearable
+          @clear="applyFilters"
+          @keyup.enter="applyFilters"
+        />
         <el-select v-model="filters.market" placeholder="시장" clearable>
           <el-option label="KOSPI" value="KOSPI" />
           <el-option label="KOSDAQ" value="KOSDAQ" />
@@ -57,24 +63,11 @@
         <el-select v-model="filters.collect_reason" placeholder="수집 사유" clearable>
           <el-option v-for="reason in reasons" :key="reason.value" :label="reason.label" :value="reason.value" />
         </el-select>
-        <el-button :loading="loading" @click="loadData">조회</el-button>
-      </div>
-
-      <div class="quick-filters">
-        <span class="quick-filters-label">빠른 사유 필터</span>
-        <el-check-tag
-          v-for="reason in reasons"
-          :key="reason.value"
-          :checked="filters.collect_reason === reason.value"
-          @change="toggleReasonFilter(reason.value)"
-        >
-          {{ reason.label }}
-        </el-check-tag>
+        <el-button :loading="loading" @click="applyFilters">조회</el-button>
       </div>
 
       <div class="rules-summary">
         <span class="rules-summary-label">활성 규칙</span>
-        <strong>{{ enabledRuleCount }}</strong>
         <span class="muted">총 {{ rules.length }}개</span>
         <div class="rules-summary-tags">
           <el-tag v-for="item in ruleTypeSummary" :key="item.type" effect="plain" round>
@@ -360,12 +353,16 @@ function startEditRule(row: CollectionRule) {
   ruleConditionText.value = JSON.stringify(row.condition_json ?? {}, null, 2)
 }
 
-function toggleReasonFilter(reason: string) {
-  filters.collect_reason = filters.collect_reason === reason ? '' : reason
-}
-
 function resetToFirstPage() {
   pagination.page = 1
+}
+
+function applyFilters() {
+  if (pagination.page !== 1) {
+    resetToFirstPage()
+    return
+  }
+  void loadData()
 }
 
 function isRowSaving(stockId: number) {
@@ -529,20 +526,16 @@ async function removeRule(row: CollectionRule) {
 }
 
 watch(() => filters.market, () => {
-  resetToFirstPage()
-  void loadData()
+  applyFilters()
 })
 watch(() => filters.priority, () => {
-  resetToFirstPage()
-  void loadData()
+  applyFilters()
 })
 watch(() => filters.collect_reason, () => {
-  resetToFirstPage()
-  void loadData()
+  applyFilters()
 })
 watch(enabledFilter, () => {
-  resetToFirstPage()
-  void loadData()
+  applyFilters()
 })
 watch(() => pagination.page, () => {
   void loadData()
@@ -626,19 +619,6 @@ onMounted(async () => {
   grid-template-columns: minmax(180px, 1fr) 130px 130px 130px 170px auto;
   gap: 10px;
   margin-bottom: 12px;
-}
-
-.quick-filters {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  align-items: center;
-  margin-bottom: 12px;
-}
-
-.quick-filters-label {
-  color: var(--text-muted);
-  font-size: 13px;
 }
 
 .rules-summary {
@@ -740,10 +720,6 @@ code {
   .panel-actions > * {
     margin-bottom: 8px;
     width: 100%;
-  }
-
-  .quick-filters {
-    align-items: flex-start;
   }
 
   .rules-dialog-form {
