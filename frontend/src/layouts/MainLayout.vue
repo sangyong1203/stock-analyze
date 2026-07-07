@@ -1,20 +1,35 @@
 <template>
   <div class="page-shell">
-    <aside class="sidebar">
+    <aside class="sidebar" :class="{ 'is-collapsed': isMenuCollapsed }">
       <div class="brand">
-        <span class="brand-mark">SA</span>
-        <div>
-          <strong>Stock Analyze</strong>
-          <span>Private Workspace</span>
+        <div class="brand-copy" :class="{ 'is-collapsed': isMenuCollapsed }">
+          <div v-show="!isMenuCollapsed" class="brand-text">
+            <span class="brand-mark">SA</span>
+            <strong>Stock Analyze</strong>
+            <span>Private Workspace</span>
+          </div>
         </div>
+        <el-button
+          class="collapse-button"
+          circle
+          plain
+          :icon="isMenuCollapsed ? Expand : Fold"
+          @click="toggleMenu"
+        />
       </div>
 
-      <nav class="nav-list">
-        <RouterLink v-for="item in menuItems" :key="item.path" :to="item.path" class="nav-item">
+      <el-menu
+        class="sidebar-menu"
+        :default-active="activeMenu"
+        :collapse="isMenuCollapsed"
+        :collapse-transition="false"
+        router
+      >
+        <el-menu-item v-for="item in menuItems" :key="item.path" :index="item.path">
           <el-icon><component :is="item.icon" /></el-icon>
-          <span>{{ item.label }}</span>
-        </RouterLink>
-      </nav>
+          <template #title>{{ item.label }}</template>
+        </el-menu-item>
+      </el-menu>
     </aside>
 
     <main class="page-content">
@@ -44,19 +59,22 @@ import {
   DataAnalysis,
   Document,
   EditPen,
+  Expand,
+  Fold,
   Histogram,
   Money,
   Operation,
   Setting,
   Tickets,
 } from '@element-plus/icons-vue'
-import { computed } from 'vue'
-import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router'
+import { computed, ref } from 'vue'
+import { RouterView, useRoute, useRouter } from 'vue-router'
 
 import { clearAuthenticated } from '@/shared/utils/auth'
 
 const route = useRoute()
 const router = useRouter()
+const isMenuCollapsed = ref(false)
 
 const menuItems = [
   { path: '/dashboard', label: '대시보드', icon: DataAnalysis },
@@ -72,6 +90,11 @@ const menuItems = [
 ]
 
 const currentTitle = computed(() => route.meta.title ?? '대시보드')
+const activeMenu = computed(() => route.path)
+
+function toggleMenu() {
+  isMenuCollapsed.value = !isMenuCollapsed.value
+}
 
 function logout() {
   clearAuthenticated()
@@ -81,30 +104,61 @@ function logout() {
 
 <style scoped>
 .sidebar {
-  width: 248px;
+  width: 272px;
   min-height: 100vh;
   padding: 18px 14px;
   color: #eff6ef;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0)),
     var(--sidebar);
+  transition: width 0.24s ease;
+}
+
+.sidebar.is-collapsed {
+  width: 94px;
+}
+
+.sidebar.is-collapsed .brand {
+  flex-direction: column;
+  justify-content: flex-start;
+  gap: 10px;
 }
 
 .brand {
   display: flex;
+  justify-content: space-between;
   gap: 12px;
   align-items: center;
-  padding: 8px 8px 22px;
+  padding: 8px 8px 18px;
+}
+
+.brand-copy {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+}
+
+.brand-copy.is-collapsed {
+  justify-content: center;
+  flex: 0 0 38px;
 }
 
 .brand-mark {
   display: grid;
   width: 38px;
   height: 38px;
+  flex: 0 0 38px;
   place-items: center;
   border: 1px solid rgba(255, 255, 255, 0.22);
   background: #254d38;
   font-weight: 800;
+}
+
+.brand-text {
+  min-width: 0;
+  white-space: nowrap;
 }
 
 .brand strong,
@@ -117,26 +171,46 @@ function logout() {
   font-size: 12px;
 }
 
-.nav-list {
-  display: grid;
-  gap: 4px;
+.collapse-button {
+  align-self: flex-end;
+  flex: 0 0 auto;
+  border-color: rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.04);
+  color: #eff6ef;
 }
 
-.nav-item {
-  display: flex;
-  gap: 10px;
-  align-items: center;
-  min-height: 40px;
-  padding: 0 10px;
-  border-radius: 6px;
+.sidebar.is-collapsed .collapse-button {
+  align-self: center;
+}
+
+.sidebar-menu {
+  border-right: 0;
+  background: transparent;
+}
+
+.sidebar-menu :deep(.el-menu) {
+  border-right: 0;
+}
+
+.sidebar-menu :deep(.el-menu-item) {
+  margin-bottom: 4px;
+  border-radius: 10px;
   color: #dfe9df;
-  font-size: 14px;
 }
 
-.nav-item.router-link-active {
+.sidebar-menu :deep(.el-menu-item:hover) {
+  background: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
+}
+
+.sidebar-menu :deep(.el-menu-item.is-active) {
   background: #eef6e9;
   color: var(--accent-strong);
   font-weight: 700;
+}
+
+.sidebar-menu :deep(.el-menu-item .el-icon) {
+  font-size: 18px;
 }
 
 .topbar {
@@ -152,14 +226,6 @@ function logout() {
   display: flex;
   gap: 12px;
   align-items: center;
-}
-
-.eyebrow {
-  margin: 0 0 4px;
-  color: var(--accent);
-  font-size: 12px;
-  font-weight: 700;
-  text-transform: uppercase;
 }
 
 h1 {
@@ -185,13 +251,32 @@ h1 {
 }
 
 @media (max-width: 900px) {
-  .sidebar {
+  .sidebar,
+  .sidebar.is-collapsed {
     width: 100%;
     min-height: auto;
   }
 
-  .nav-list {
+  .brand {
+    align-items: center;
+  }
+
+  .brand-copy.is-collapsed {
+    justify-content: flex-start;
+  }
+
+  .brand-text {
+    display: block !important;
+  }
+
+  .sidebar-menu :deep(.el-menu) {
+    display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .sidebar-menu :deep(.el-menu-item) {
+    margin-bottom: 0;
   }
 
   .topbar {
