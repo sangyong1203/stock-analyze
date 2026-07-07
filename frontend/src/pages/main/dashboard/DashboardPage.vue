@@ -360,7 +360,6 @@ onMounted(loadSummary)
   display: flex;
   flex-direction: column;
   gap: 20px;
-  margin-top: 18px;
 }
 
 .hero {

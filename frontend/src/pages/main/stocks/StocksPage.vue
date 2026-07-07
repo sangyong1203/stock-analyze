@@ -286,7 +286,6 @@ onMounted(loadStocks)
 
 <style scoped>
 .stocks-page {
-  margin-top: 18px;
 }
 
 .kpi-grid {

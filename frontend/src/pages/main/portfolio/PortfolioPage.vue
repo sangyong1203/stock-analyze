@@ -280,7 +280,6 @@ onMounted(loadPortfolio)
 
 <style scoped>
 .portfolio-page {
-  margin-top: 18px;
 }
 
 .summary-grid {

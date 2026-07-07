@@ -470,7 +470,6 @@ onMounted(loadData)
 
 <style scoped>
 .alerts-page {
-  margin-top: 18px;
 }
 
 .kpi-grid {

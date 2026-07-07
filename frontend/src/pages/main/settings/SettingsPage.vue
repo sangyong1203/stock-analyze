@@ -332,7 +332,6 @@ onMounted(loadSettings)
 
 <style scoped>
 .settings-page {
-  margin-top: 18px;
 }
 
 .kpi-grid {

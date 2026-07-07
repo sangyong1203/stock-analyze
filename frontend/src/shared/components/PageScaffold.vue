@@ -65,7 +65,6 @@ const rows = [
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 12px;
-  margin-top: 18px;
 }
 
 .kpi-item {

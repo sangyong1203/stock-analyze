@@ -525,7 +525,6 @@ onMounted(async () => {
 
 <style scoped>
 .trades-page {
-  margin-top: 18px;
 }
 
 .panel-head {

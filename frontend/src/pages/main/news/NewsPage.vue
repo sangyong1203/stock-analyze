@@ -710,7 +710,6 @@ onMounted(loadData)
 
 <style scoped>
 .news-page {
-  margin-top: 18px;
 }
 
 .kpi-grid {

@@ -315,7 +315,6 @@ onMounted(async () => {
 
 <style scoped>
 .charts-page {
-  margin-top: 18px;
 }
 
 .chart-panel {

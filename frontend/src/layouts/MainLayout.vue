@@ -259,10 +259,10 @@ h1 {
 .content-scroll {
   min-height: 0;
   flex: 1;
-  overflow: auto;
+  overflow: scroll;
   padding-right: 4px;
   margin-right: -14px;
-  margin-top: 16px;
+  margin-top: 18px;
 }
 
 @media (max-width: 900px) {
