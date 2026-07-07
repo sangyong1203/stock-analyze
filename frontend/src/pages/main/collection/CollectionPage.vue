@@ -78,60 +78,69 @@
 
       <el-alert v-if="errorMessage" :title="errorMessage" type="error" show-icon :closable="false" />
 
-      <el-table v-loading="loading" :data="stocks" border @sort-change="handleSortChange">
-        <el-table-column prop="stock_code" label="코드" width="105" />
-        <el-table-column prop="stock_name" label="종목명" min-width="150" sortable="custom" />
-        <el-table-column prop="market" label="시장" width="100" />
-        <el-table-column prop="sector" label="섹터" min-width="130" />
-        <el-table-column prop="market_cap" label="시총" min-width="120" align="right" sortable="custom">
-          <template #default="{ row }">
-            <span :title="formatNumber(row.market_cap)">{{ formatCompactKoreanNumber(row.market_cap) }}</span>
-          </template>
-        </el-table-column>
-        <el-table-column label="분류" min-width="180">
-          <template #default="{ row }">
-            <el-tag v-if="row.is_holding_calculated" type="success" effect="plain">보유</el-tag>
-            <el-tag v-else-if="row.is_favorite" type="warning" effect="plain">관심</el-tag>
-            <el-tag v-if="row.manual_include" type="primary" effect="plain">수동 포함</el-tag>
-            <el-tag v-if="row.manual_exclude" type="danger" effect="plain">수동 제외</el-tag>
-            <span v-if="!row.is_holding_calculated && !row.is_favorite && !row.manual_include && !row.manual_exclude" class="muted">-</span>
-          </template>
-        </el-table-column>
-        <el-table-column label="사유" width="150">
-          <template #default="{ row }">
-            <el-tag v-if="row.collect_reason" :type="reasonTagType(row.collect_reason)" effect="light" round>
-              {{ reasonLabel(row.collect_reason) }}
-            </el-tag>
-            <span v-else class="muted">-</span>
-          </template>
-        </el-table-column>
-        <el-table-column prop="priority" label="우선순위" width="110" sortable="custom">
-          <template #default="{ row }">
-            <el-tag :type="priorityTagType(row.priority)" effect="plain" round>{{ priorityLabel(row.priority) }}</el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column label="수집" width="90">
-          <template #default="{ row }">
-            <el-switch v-model="row.collect_enabled" :loading="isRowSaving(row.stock_id)" :disabled="isRowSaving(row.stock_id)" @change="saveSetting(row)" />
-          </template>
-        </el-table-column>
-        <el-table-column label="뉴스" width="90">
-          <template #default="{ row }">
-            <el-switch v-model="row.collect_news" :loading="isRowSaving(row.stock_id)" :disabled="isRowSaving(row.stock_id)" @change="saveSetting(row)" />
-          </template>
-        </el-table-column>
-        <el-table-column label="알림" width="90">
-          <template #default="{ row }">
-            <el-switch v-model="row.collect_alert_enabled" :loading="isRowSaving(row.stock_id)" :disabled="isRowSaving(row.stock_id)" @change="saveSetting(row)" />
-          </template>
-        </el-table-column>
-        <el-table-column label="수동" width="150">
-          <template #default="{ row }">
-            <el-button link type="primary" :disabled="row.manual_include || isRowSaving(row.stock_id)" @click="includeStock(row)">포함</el-button>
-            <el-button link type="danger" :disabled="row.manual_exclude || isRowSaving(row.stock_id)" @click="excludeStock(row)">제외</el-button>
-          </template>
-        </el-table-column>
-      </el-table>
+      <div class="table-shell">
+        <el-table
+          v-loading="loading"
+          class="collection-table"
+          :data="stocks"
+          border
+          height="100%"
+          @sort-change="handleSortChange"
+        >
+          <el-table-column prop="stock_code" label="코드" width="105" />
+          <el-table-column prop="stock_name" label="종목명" min-width="150" sortable="custom" />
+          <el-table-column prop="market" label="시장" width="100" />
+          <el-table-column prop="sector" label="섹터" min-width="130" />
+          <el-table-column prop="market_cap" label="시총" min-width="120" align="right" sortable="custom">
+            <template #default="{ row }">
+              <span :title="formatNumber(row.market_cap)">{{ formatCompactKoreanNumber(row.market_cap) }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="분류" min-width="180">
+            <template #default="{ row }">
+              <el-tag v-if="row.is_holding_calculated" type="success" effect="plain">보유</el-tag>
+              <el-tag v-else-if="row.is_favorite" type="warning" effect="plain">관심</el-tag>
+              <el-tag v-if="row.manual_include" type="primary" effect="plain">수동 포함</el-tag>
+              <el-tag v-if="row.manual_exclude" type="danger" effect="plain">수동 제외</el-tag>
+              <span v-if="!row.is_holding_calculated && !row.is_favorite && !row.manual_include && !row.manual_exclude" class="muted">-</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="사유" width="150">
+            <template #default="{ row }">
+              <el-tag v-if="row.collect_reason" :type="reasonTagType(row.collect_reason)" effect="light" round>
+                {{ reasonLabel(row.collect_reason) }}
+              </el-tag>
+              <span v-else class="muted">-</span>
+            </template>
+          </el-table-column>
+          <el-table-column prop="priority" label="우선순위" width="110" sortable="custom">
+            <template #default="{ row }">
+              <el-tag :type="priorityTagType(row.priority)" effect="plain" round>{{ priorityLabel(row.priority) }}</el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column label="수집" width="90">
+            <template #default="{ row }">
+              <el-switch v-model="row.collect_enabled" :loading="isRowSaving(row.stock_id)" :disabled="isRowSaving(row.stock_id)" @change="saveSetting(row)" />
+            </template>
+          </el-table-column>
+          <el-table-column label="뉴스" width="90">
+            <template #default="{ row }">
+              <el-switch v-model="row.collect_news" :loading="isRowSaving(row.stock_id)" :disabled="isRowSaving(row.stock_id)" @change="saveSetting(row)" />
+            </template>
+          </el-table-column>
+          <el-table-column label="알림" width="90">
+            <template #default="{ row }">
+              <el-switch v-model="row.collect_alert_enabled" :loading="isRowSaving(row.stock_id)" :disabled="isRowSaving(row.stock_id)" @change="saveSetting(row)" />
+            </template>
+          </el-table-column>
+          <el-table-column label="수동" width="150">
+            <template #default="{ row }">
+              <el-button link type="primary" :disabled="row.manual_include || isRowSaving(row.stock_id)" @click="includeStock(row)">포함</el-button>
+              <el-button link type="danger" :disabled="row.manual_exclude || isRowSaving(row.stock_id)" @click="excludeStock(row)">제외</el-button>
+            </template>
+          </el-table-column>
+        </el-table>
+      </div>
 
       <div class="table-footer">
         <span class="muted">총 {{ totalStocks }}건 중 {{ pageStart }}-{{ pageEnd }}건 표시</span>
@@ -573,7 +582,10 @@ onMounted(async () => {
 
 <style scoped>
 .collection-page {
-  margin-top: 18px;
+  display: flex;
+  min-height: 0;
+  height: 100%;
+  flex-direction: column;
 }
 
 .kpi-grid {
@@ -601,6 +613,11 @@ onMounted(async () => {
 }
 
 .collection-panel {
+  display: flex;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
+  overflow: hidden;
   padding: 16px;
 }
 
@@ -665,6 +682,16 @@ onMounted(async () => {
   gap: 8px;
 }
 
+.table-shell {
+  min-height: 260px;
+  flex: 1;
+  overflow: hidden;
+}
+
+.collection-table {
+  height: 100%;
+}
+
 .rules-dialog {
   display: grid;
   grid-template-columns: minmax(0, 1.25fr) minmax(320px, 0.95fr);
@@ -672,6 +699,7 @@ onMounted(async () => {
 }
 
 .table-footer {
+  flex: 0 0 auto;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -712,8 +740,20 @@ code {
 }
 
 @media (max-width: 1100px) {
+  .collection-page,
+  .collection-panel {
+    display: block;
+    height: auto;
+    overflow: visible;
+  }
+
   .kpi-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .table-shell {
+    height: 520px;
+    min-height: 420px;
   }
 
   .panel-head,

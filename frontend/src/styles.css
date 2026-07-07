@@ -22,8 +22,65 @@
   box-sizing: border-box;
 }
 
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  border: 2px solid transparent;
+  border-radius: 999px;
+  background-clip: content-box;
+  background-color: rgba(31, 92, 67, 0.28);
+}
+
+*:hover::-webkit-scrollbar-thumb {
+  background-color: rgba(31, 92, 67, 0.44);
+}
+
+*::-webkit-scrollbar-button,
+*::-webkit-scrollbar-button:single-button,
+*::-webkit-scrollbar-button:double-button,
+*::-webkit-scrollbar-button:vertical:start:decrement,
+*::-webkit-scrollbar-button:vertical:start:increment,
+*::-webkit-scrollbar-button:vertical:end:decrement,
+*::-webkit-scrollbar-button:vertical:end:increment,
+*::-webkit-scrollbar-button:horizontal:start:decrement,
+*::-webkit-scrollbar-button:horizontal:start:increment,
+*::-webkit-scrollbar-button:horizontal:end:decrement,
+*::-webkit-scrollbar-button:horizontal:end:increment,
+.el-scrollbar__wrap::-webkit-scrollbar-button,
+.el-table__body-wrapper::-webkit-scrollbar-button {
+  display: none !important;
+  width: 0 !important;
+  min-width: 0 !important;
+  height: 0 !important;
+  min-height: 0 !important;
+  -webkit-appearance: none;
+  background: transparent !important;
+  background-image: none !important;
+}
+
+*::-webkit-scrollbar-corner,
+*::-webkit-scrollbar-track-piece:start,
+*::-webkit-scrollbar-track-piece:end {
+  background: transparent !important;
+  background-image: none !important;
+}
+
+html,
+body,
+#app {
+  height: 100%;
+}
+
 body {
   margin: 0;
+  overflow: hidden;
   background: linear-gradient(180deg, #f8faf6 0%, var(--app-bg) 48%, #edf2ea 100%);
 }
 
@@ -42,12 +99,17 @@ a {
 
 .page-shell {
   display: flex;
-  min-height: 100vh;
+  height: 100vh;
+  overflow: hidden;
 }
 
 .page-content {
   min-width: 0;
   flex: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
   padding: 20px 24px 28px;
 }
 
@@ -70,11 +132,27 @@ a {
 }
 
 @media (max-width: 900px) {
+  html,
+  body,
+  #app {
+    height: auto;
+  }
+
+  body {
+    overflow: auto;
+  }
+
   .page-shell {
     display: block;
+    height: auto;
+    min-height: 100vh;
+    overflow: visible;
   }
 
   .page-content {
+    display: block;
+    height: auto;
+    overflow: visible;
     padding: 14px;
   }
 }

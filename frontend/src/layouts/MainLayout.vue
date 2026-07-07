@@ -47,7 +47,9 @@
         </div>
       </header>
 
-      <RouterView />
+      <section class="content-scroll">
+        <RouterView />
+      </section>
     </main>
   </div>
 </template>
@@ -105,13 +107,16 @@ function logout() {
 <style scoped>
 .sidebar {
   width: 272px;
-  min-height: 100vh;
+  height: 100vh;
   padding: 18px 14px;
+  overflow-y: auto;
   color: #eff6ef;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0)),
     var(--sidebar);
   transition: width 0.24s ease;
+  scrollbar-color: rgba(238, 246, 233, 0.34) transparent;
+  scrollbar-width: thin;
 }
 
 .sidebar.is-collapsed {
@@ -214,6 +219,7 @@ function logout() {
 }
 
 .topbar {
+  flex: 0 0 auto;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -250,11 +256,22 @@ h1 {
   font-size: 12px;
 }
 
+.content-scroll {
+  min-height: 0;
+  flex: 1;
+  overflow: auto;
+  padding-right: 4px;
+  margin-right: -14px;
+  margin-top: 16px;
+}
+
 @media (max-width: 900px) {
   .sidebar,
   .sidebar.is-collapsed {
     width: 100%;
+    height: auto;
     min-height: auto;
+    overflow: visible;
   }
 
   .brand {
@@ -291,6 +308,12 @@ h1 {
     justify-content: flex-start;
     margin-top: 12px;
     margin-bottom: 12px;
+  }
+
+  .content-scroll {
+    overflow: visible;
+    padding-top: 14px;
+    padding-right: 0;
   }
 }
 </style>
