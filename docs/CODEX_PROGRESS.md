@@ -2,57 +2,55 @@
 
 ## Current phase
 
-- Phase: Google OAuth live login verification
-- Task document: `docs/CODEX_TASK_2.20B.md`
-- Status: backend OAuth flow connected, runtime callback error fixed, browser login and dashboard redirect verified
+- Phase: frontend auth persistence and protected-route minimum wiring
+- Task document: `docs/CODEX_TASK_2.21.md`
+- Status: frontend auth persistence, protected routes, logout, and backend redirect handoff verified
 
 ## Completed major work
 
 - Reviewed:
-  - `docs/CODEX_TASK_2.20B.md`
+  - `docs/CODEX_TASK_2.21.md`
   - `docs/INVESTMENT_SYSTEM_PLAN_v1.2.md`
   - `docs/MVP_DB_SCHEMA_v1.2.md`
-- Restarted backend with current `.env` configuration
-- Verified auth readiness endpoint:
-  - `oauth_configured = true`
-  - `allowed_email_configured = true`
-- Implemented and verified live OAuth routes:
-  - `/api/auth/status`
-  - `/api/auth/google/login`
-  - `/api/auth/google/callback`
-- Connected frontend login page button to backend Google login flow
-- Fixed callback failure caused by `fastapi.Request` and `urllib.request.Request` name collision
-- Completed real browser login flow through Google consent
-- Verified final redirect:
-  - `http://localhost:5173/dashboard?auth=success`
-- Verified post-login dashboard API loading:
-  - `/api/dashboard/summary`
-  - `/api/jobs/summary`
-- Verified allowed Google account row exists in `users`
+- Confirmed pre-task frontend state:
+  - login success opened dashboard but auth state was not persisted on frontend
+  - protected routes were not guarded
+  - logout action was not present
+- Added frontend auth utility using localStorage
+- Added router guard for minimum protected routes:
+  - `/dashboard`
+  - `/portfolio`
+  - `/alerts`
+  - `/news`
+  - `/settings`
+- Added login redirect handling through `/login?redirect=...`
+- Added logout action in `MainLayout`
+- Added backend OAuth redirect cookie support so post-login return path can be restored
+- Rebuilt frontend successfully
+- Revalidated backend auth readiness and frontend route behavior
 - Added:
-  - `docs/CODEX_TASK_2.20B_REPORT.md`
+  - `docs/CODEX_TASK_2.21_REPORT.md`
 
 ## Verification result
 
 | Item | Result |
 |---|---|
-| Backend restarted | yes |
+| Frontend build | passed |
 | `/api/auth/status` ready flags | true / true |
-| Google login URL generated | yes |
-| Callback route responded successfully | yes |
-| Browser consent flow completed | yes |
-| `/dashboard` reached after login | yes |
-| Dashboard APIs loaded after login | yes |
+| Unauthenticated `/dashboard` redirect | passed |
+| OAuth success saves auth state | passed |
+| Reload keeps dashboard access | passed |
+| Logout clears auth state | passed |
+| `/portfolio` redirect after logout | passed |
 | Real Gmail sent | no |
 
 ## Current validated configuration notes
 
-- Google OAuth env values are present in `backend/.env`
-- Real client values were not printed in logs or report text
-- Current callback route is:
-  - `http://127.0.0.1:8000/api/auth/google/callback`
-- Current frontend post-login route is:
-  - `http://localhost:5173/dashboard?auth=success`
+- Frontend auth persistence key:
+  - `stock-analyze-authenticated`
+- Backend login route now accepts optional relative redirect:
+  - `/api/auth/google/login?redirect=/portfolio`
+- OAuth success redirect still uses frontend `auth=success` marker, then frontend strips it from final URL
 
 ## Confirmation-needed items
 
@@ -60,4 +58,4 @@
 
 ## Next step suggestions
 
-- Add durable frontend auth/session handling only when a later task explicitly requires route protection
+- Upgrade to server-side auth validation only when a later task explicitly requires stronger access control

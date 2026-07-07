@@ -23,10 +23,13 @@
           <p class="eyebrow">Korean Equity Analysis</p>
           <h1>{{ currentTitle }}</h1>
         </div>
-        <div class="status-strip">
-          <span>KRX 대기</span>
-          <span>뉴스 수집 대기</span>
-          <span>알림 ON</span>
+        <div class="topbar-actions">
+          <div class="status-strip">
+            <span>KRX 대기</span>
+            <span>뉴스 수집 대기</span>
+            <span>알림 ON</span>
+          </div>
+          <el-button plain @click="logout">로그아웃</el-button>
         </div>
       </header>
 
@@ -49,9 +52,12 @@ import {
   Tickets,
 } from '@element-plus/icons-vue'
 import { computed } from 'vue'
-import { RouterLink, RouterView, useRoute } from 'vue-router'
+import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router'
+
+import { clearAuthenticated } from '@/shared/utils/auth'
 
 const route = useRoute()
+const router = useRouter()
 
 const menuItems = [
   { path: '/dashboard', label: '대시보드', icon: DataAnalysis },
@@ -67,6 +73,11 @@ const menuItems = [
 ]
 
 const currentTitle = computed(() => route.meta.title ?? '대시보드')
+
+function logout() {
+  clearAuthenticated()
+  void router.replace('/login')
+}
 </script>
 
 <style scoped>
@@ -138,6 +149,12 @@ const currentTitle = computed(() => route.meta.title ?? '대시보드')
   border-bottom: 1px solid var(--border);
 }
 
+.topbar-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
 .eyebrow {
   margin: 0 0 4px;
   color: var(--accent);
@@ -182,9 +199,14 @@ h1 {
     display: block;
   }
 
+  .topbar-actions {
+    display: block;
+  }
+
   .status-strip {
     justify-content: flex-start;
     margin-top: 12px;
+    margin-bottom: 12px;
   }
 }
 </style>

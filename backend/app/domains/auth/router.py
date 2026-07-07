@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from app.common.responses import ok
 from app.db.session import get_db
 from app.domains.auth.service import (
-    build_frontend_dashboard_url,
+    build_frontend_redirect_url,
     build_google_login_url,
     create_google_oauth_state,
     exchange_google_code,
@@ -24,7 +24,7 @@ def status():
 
 
 @router.get("/google/login")
-def google_login(request: Request):
+def google_login(request: Request, redirect: str | None = Query(default=None)):
     auth_status = get_auth_status()
     if not auth_status["oauth_configured"] or not auth_status["allowed_email_configured"]:
         raise HTTPException(status_code=400, detail="Google OAuth is not fully configured")
@@ -38,6 +38,15 @@ def google_login(request: Request):
         samesite="lax",
         max_age=600,
     )
+    if redirect and redirect.startswith("/"):
+        response.set_cookie(
+            key="google_oauth_redirect",
+            value=redirect,
+            httponly=True,
+            secure=False,
+            samesite="lax",
+            max_age=600,
+        )
     return response
 
 
@@ -67,6 +76,10 @@ async def google_callback(
         avatar_url=userinfo.get("picture"),
     )
 
-    response = RedirectResponse(f"{build_frontend_dashboard_url()}?auth=success", status_code=302)
+    redirect_path = request.cookies.get("google_oauth_redirect")
+    frontend_redirect_url = build_frontend_redirect_url(redirect_path)
+    separator = "&" if "?" in frontend_redirect_url else "?"
+    response = RedirectResponse(f"{frontend_redirect_url}{separator}auth=success", status_code=302)
     response.delete_cookie("google_oauth_state")
+    response.delete_cookie("google_oauth_redirect")
     return response

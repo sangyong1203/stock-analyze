@@ -2,104 +2,122 @@
 
 ## Work overview
 
-- Latest completed scope: `docs/CODEX_TASK_2.20B.md`
-- Scope handled in this task: Google OAuth live login verification and minimum auth flow fix
+- Latest completed scope: `docs/CODEX_TASK_2.21.md`
+- Scope handled in this task: frontend auth state persistence, protected routes, and minimum logout flow
 - Constraint kept:
-  - no real client secret output
-  - no real Gmail sending
+  - existing Google OAuth flow preserved
   - no schema change
   - no migration
+  - no real Gmail sending
 
 ## Reference documents
 
-- `docs/CODEX_TASK_2.20B.md`
+- `docs/CODEX_TASK_2.21.md`
 - `docs/INVESTMENT_SYSTEM_PLAN_v1.2.md`
 - `docs/MVP_DB_SCHEMA_v1.2.md`
 
 ## Completed work
 
-- Restarted backend after reading the Google OAuth env-backed configuration
-- Verified `/api/auth/status` returns `oauth_configured=true` and `allowed_email_configured=true`
-- Verified Google login redirect URL and callback path are wired to `/api/auth/google/login` and `/api/auth/google/callback`
-- Replaced placeholder Google login backend flow with real OAuth redirect, callback, token exchange, userinfo fetch, allowed-email validation, and user upsert
-- Connected the frontend login button to the backend Google login endpoint
-- Fixed the callback runtime error caused by `Request` name collision between FastAPI and `urllib.request`
-- Executed the real browser login flow through Google consent
-- Confirmed successful redirect to `/dashboard?auth=success`
-- Confirmed dashboard screen and summary APIs load after login
+- Reviewed the current frontend login persistence state
+- Confirmed the pre-task state had no frontend auth persistence and no protected-route guard
+- Added localStorage-based minimum auth state persistence on frontend OAuth success
+- Added route guard logic for `/dashboard`, `/portfolio`, `/alerts`, `/news`, and `/settings`
+- Redirected unauthenticated access attempts to `/login`
+- Added minimum logout action in the main layout
+- Extended backend OAuth redirect handling so the original protected route can be restored after login
+- Revalidated auth readiness endpoint and backend redirect cookies
+- Revalidated frontend auth persistence, reload persistence, and logout route protection
 
 ## Generated files
 
-- `docs/CODEX_TASK_2.20B_REPORT.md`
+- `docs/CODEX_TASK_2.21_REPORT.md`
 
 ## Modified files
 
-- `backend/app/domains/auth/repository.py`
 - `backend/app/domains/auth/router.py`
 - `backend/app/domains/auth/service.py`
+- `frontend/src/layouts/MainLayout.vue`
 - `frontend/src/pages/login/LoginPage.vue`
+- `frontend/src/router/index.ts`
+- `frontend/src/router/routes.ts`
+- `frontend/src/shared/utils/auth.ts`
 - `docs/CODEX_PROGRESS.md`
 - `docs/DEVELOPMENT_REPORT.md`
 
 ## Backend implementation result
 
-- Added live Google OAuth endpoints:
+- Existing Google OAuth routes kept:
   - `GET /api/auth/status`
   - `GET /api/auth/google/login`
   - `GET /api/auth/google/callback`
-- Added Google OAuth service flow using existing settings and existing `users` table
-- Verified callback success path stores or updates the allowed Google user
-- Verified callback redirect target is frontend dashboard URL
+- Added minimum `redirect` cookie handling during Google login start and callback finish
+- Callback now redirects to the requested frontend path when it is a local relative path, otherwise falls back to dashboard
 
 ## Frontend implementation result
 
-- Login page Google button now opens backend Google OAuth login endpoint
-- Successful OAuth callback returns the browser to `/dashboard?auth=success`
-- Dashboard route access and API loading were verified in browser
+- Added minimum auth persistence using `localStorage`
+- OAuth success marker `auth=success` now sets auth state and is removed from the final URL
+- Protected routes added:
+  - `/dashboard`
+  - `/portfolio`
+  - `/alerts`
+  - `/news`
+  - `/settings`
+- Unauthenticated users are redirected to `/login?redirect=...`
+- Added logout button in main layout
+- Logout clears auth state and returns the user to `/login`
 
 ## DB implementation result
 
 - No schema change
 - No new table
 - No migration
-- Verified `users` table contains the logged-in Google account row after callback success
 
 ## Execution method
 
 Main verification:
 
 ```text
-Restart backend server
+Frontend build
+GET /health
 GET /api/auth/status
-GET /api/auth/google/login
-Browser test: /login -> Google consent -> /api/auth/google/callback -> /dashboard?auth=success
-Inspect backend logs
-Check users table row in backend/stock_analyze.db
+GET /api/auth/google/login?redirect=/portfolio
+Headless browser QA:
+- /dashboard -> /login redirect
+- /dashboard?auth=success -> /dashboard auth state save
+- reload keeps /dashboard access
+- logout clears auth state and returns /login
+- /portfolio after logout -> /login redirect
 ```
 
 ## Test result
 
+- Frontend build: passed
 - Backend health check: passed
 - `/api/auth/status`: passed
   - `oauth_configured = true`
   - `allowed_email_configured = true`
-- Google login URL generation: passed
-- Callback path generation: passed
-- Browser login flow: passed
-  - login page opened at `http://localhost:5173/login`
-  - Google consent completed
-  - callback returned `302`
-  - final URL reached `http://localhost:5173/dashboard?auth=success`
-- Dashboard access after login: passed
-  - `GET /api/dashboard/summary` returned `200`
-  - `GET /api/jobs/summary` returned `200`
-- User persistence check: passed
-  - `users` row count: `1`
-- Gmail sending: not executed by task design
+- Backend login redirect cookie: passed
+  - `/api/auth/google/login?redirect=/portfolio` returned `302`
+  - `google_oauth_redirect=/portfolio` cookie set
+- Protected route redirect: passed
+  - unauthenticated `/dashboard` redirected to `/login?redirect=/dashboard`
+- OAuth success persistence: passed
+  - `/dashboard?auth=success` normalized to `/dashboard`
+  - `localStorage['stock-analyze-authenticated'] = 'true'`
+- Reload persistence: passed
+  - `/dashboard` access remained after reload
+- Logout: passed
+  - returned to `/login`
+  - auth localStorage cleared
+- Protected route after logout: passed
+  - `/portfolio` redirected to `/login?redirect=/portfolio`
+- Real Gmail sending: not executed
 
 ## Incomplete items
 
-- No frontend session persistence was implemented in this task
+- This task did not add server-side session invalidation or token revocation
+- Non-protected routes remain accessible by current MVP design
 
 ## Confirmation-needed items
 
@@ -107,10 +125,10 @@ Check users table row in backend/stock_analyze.db
 
 ## Next step suggestions
 
-- Add explicit frontend auth/session state only when a later task requires protected-route enforcement
-- If browser-specific callback blocking reappears, recheck local browser extensions before changing backend logic
+- If a later task requires stronger auth, move from frontend-only persistence to server-issued session or JWT validation
+- If more menus should require login, extend `requiresAuth` consistently rather than adding ad hoc checks per page
 
 ## Final completion statement
 
-CODEX_TASK_2.20B Google OAuth 로그인 검증 완료했습니다.
+CODEX_TASK_2.21 프론트 인증 상태 유지 및 보호 라우트 최소 구현 완료했습니다.
 DEVELOPMENT_REPORT.md를 확인해 주세요.

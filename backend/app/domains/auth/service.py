@@ -30,6 +30,17 @@ def build_frontend_dashboard_url() -> str:
     return f"{frontend_base_url.rstrip('/')}/dashboard"
 
 
+def build_frontend_redirect_url(redirect_path: str | None) -> str:
+    dashboard_url = build_frontend_dashboard_url()
+    if not redirect_path:
+        return dashboard_url
+    normalized_redirect = redirect_path.strip()
+    if not normalized_redirect.startswith("/"):
+        return dashboard_url
+    frontend_base_url = dashboard_url.rsplit("/dashboard", 1)[0]
+    return f"{frontend_base_url}{normalized_redirect}"
+
+
 def create_google_oauth_state() -> str:
     return token_urlsafe(32)
 
