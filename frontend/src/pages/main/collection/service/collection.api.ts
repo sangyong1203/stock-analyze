@@ -19,6 +19,8 @@ function toQuery(filters: CollectionFilters) {
   if (filters.collect_reason) params.set('collect_reason', filters.collect_reason)
   if (filters.page) params.set('page', String(filters.page))
   if (filters.page_size) params.set('page_size', String(filters.page_size))
+  if (filters.sort_by) params.set('sort_by', filters.sort_by)
+  if (filters.sort_order) params.set('sort_order', filters.sort_order)
   const query = params.toString()
   return query ? `?${query}` : ''
 }

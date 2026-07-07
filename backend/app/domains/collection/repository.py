@@ -1,4 +1,4 @@
-from sqlalchemy import exists, func, or_
+from sqlalchemy import case, exists, func, or_
 from sqlalchemy.orm import Session
 
 from app.db.models import (
@@ -78,6 +78,8 @@ def list_collection_stocks(
     keyword: str | None = None,
     page: int = 1,
     page_size: int = 50,
+    sort_by: str | None = None,
+    sort_order: str | None = None,
 ):
     holding_exists = exists().where(
         Holding.stock_id == Stock.id,
@@ -125,7 +127,25 @@ def list_collection_stocks(
         query = query.filter(or_(Stock.code.like(like), Stock.name.like(like), Stock.sector.like(like)))
 
     total_count = query.count()
-    rows = query.order_by(Stock.code).offset((page - 1) * page_size).limit(page_size).all()
+
+    priority_rank = case(
+        (StockCollectionSetting.priority == "high", 1),
+        (StockCollectionSetting.priority == "normal", 2),
+        else_=3,
+    )
+    sort_columns = {
+        "stock_name": Stock.name,
+        "market_cap": Stock.market_cap,
+        "priority": priority_rank,
+    }
+    sort_column = sort_columns.get(sort_by or "")
+    if sort_column is not None:
+        direction = sort_column.desc() if sort_order == "desc" else sort_column.asc()
+        query = query.order_by(direction, Stock.code.asc())
+    else:
+        query = query.order_by(Stock.code.asc())
+
+    rows = query.offset((page - 1) * page_size).limit(page_size).all()
     return rows, total_count
 
 

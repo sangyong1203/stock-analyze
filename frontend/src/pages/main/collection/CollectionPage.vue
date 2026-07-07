@@ -78,12 +78,12 @@
 
       <el-alert v-if="errorMessage" :title="errorMessage" type="error" show-icon :closable="false" />
 
-      <el-table v-loading="loading" :data="stocks" border>
+      <el-table v-loading="loading" :data="stocks" border @sort-change="handleSortChange">
         <el-table-column prop="stock_code" label="코드" width="105" />
-        <el-table-column prop="stock_name" label="종목명" min-width="150" />
+        <el-table-column prop="stock_name" label="종목명" min-width="150" sortable="custom" />
         <el-table-column prop="market" label="시장" width="100" />
         <el-table-column prop="sector" label="섹터" min-width="130" />
-        <el-table-column label="시총" min-width="120" align="right">
+        <el-table-column prop="market_cap" label="시총" min-width="120" align="right" sortable="custom">
           <template #default="{ row }">
             <span :title="formatNumber(row.market_cap)">{{ formatCompactKoreanNumber(row.market_cap) }}</span>
           </template>
@@ -105,7 +105,7 @@
             <span v-else class="muted">-</span>
           </template>
         </el-table-column>
-        <el-table-column label="우선순위" width="110">
+        <el-table-column prop="priority" label="우선순위" width="110" sortable="custom">
           <template #default="{ row }">
             <el-tag :type="priorityTagType(row.priority)" effect="plain" round>{{ priorityLabel(row.priority) }}</el-tag>
           </template>
@@ -262,6 +262,13 @@ const pagination = reactive({
   page: 1,
   pageSize: 50,
 })
+const sortState = reactive<{
+  sortBy: string
+  sortOrder?: 'asc' | 'desc'
+}>({
+  sortBy: '',
+  sortOrder: undefined,
+})
 
 const ruleForm = reactive({
   name: '',
@@ -299,6 +306,8 @@ async function loadData() {
       collect_enabled: collectEnabled,
       page: pagination.page,
       page_size: pagination.pageSize,
+      sort_by: sortState.sortBy || undefined,
+      sort_order: sortState.sortOrder,
     })
     if (Array.isArray(stockResponse)) {
       stocks.value = stockResponse
@@ -365,6 +374,13 @@ function applyFilters() {
   void loadData()
 }
 
+function handleSortChange({ prop, order }: { prop: string; order: 'ascending' | 'descending' | null }) {
+  const sortableColumns = new Set(['stock_name', 'market_cap', 'priority'])
+  sortState.sortBy = prop && sortableColumns.has(prop) && order ? prop : ''
+  sortState.sortOrder = order === 'ascending' ? 'asc' : order === 'descending' ? 'desc' : undefined
+  applyFilters()
+}
+
 function isRowSaving(stockId: number) {
   return savingRowIds.value.includes(stockId)
 }
@@ -423,6 +439,7 @@ async function saveSetting(row: CollectionStock) {
       priority: row.priority,
       collect_reason: row.collect_reason,
     })
+    await loadMeta()
     await loadData()
   } finally {
     setRowSaving(row.stock_id, false)

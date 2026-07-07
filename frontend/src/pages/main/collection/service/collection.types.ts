@@ -53,6 +53,8 @@ export interface CollectionFilters {
   collect_reason?: string
   page?: number
   page_size?: number
+  sort_by?: string
+  sort_order?: 'asc' | 'desc'
 }
 
 export interface CollectionStockListResponse {
