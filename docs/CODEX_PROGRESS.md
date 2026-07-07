@@ -2,61 +2,58 @@
 
 ## Current phase
 
-- Phase: pre-operation backup and operation readiness check
-- Task document: `docs/CODEX_TASK_2.22.md`
-- Status: final backup created, operation summary verified, checklist documented
+- Phase: pre-operation price/news refresh and alert readiness verification
+- Task document: `docs/CODEX_TASK_2.23.md`
+- Status: live price refresh completed, live news refresh completed, alert dry-run completed
 
 ## Completed major work
 
 - Reviewed:
-  - `docs/CODEX_TASK_2.22.md`
+  - `docs/CODEX_TASK_2.23.md`
   - `docs/INVESTMENT_SYSTEM_PLAN_v1.2.md`
   - `docs/MVP_DB_SCHEMA_v1.2.md`
-- Verified live DB existence and current table counts
-- Created final SQLite backup:
-  - `backend/backups/stock_analyze_pre_operation_20260707_132844.db`
-- Verified operation summaries:
-  - prices
-  - holdings
-  - portfolio
-  - price alerts
-  - news
-  - GPT status
-  - job summary
-  - alert settings
-- Verified protected operation screens load:
-  - `/dashboard`
-  - `/portfolio`
-  - `/alerts`
-  - `/news`
-  - `/settings`
+- Verified backend health
+- Ran KRX daily collection on live DB
+- Confirmed `latest_price_date` updated to `2025-07-07`
+- Rechecked holdings, portfolio, and dashboard consistency after refresh
+- Ran market news collection
+- Confirmed live news count increased to `51`
+- Confirmed latest news published time updated to `2026-07-07 14:22:00`
+- Checked GPT summary/filter target status
+- Ran GPT summary processing for 5 targets
+- Confirmed GPT filter execution is currently blocked by OpenAI quota
+- Ran:
+  - `price alert dry-run`
+  - `news alert dry-run`
 - Added:
-  - `docs/CODEX_TASK_2.22_REPORT.md`
-  - `docs/OPERATION_START_CHECKLIST.md`
+  - `docs/CODEX_TASK_2.23_REPORT.md`
 
 ## Verification result
 
 | Item | Result |
 |---|---|
-| Live DB exists | yes |
-| Final backup created | yes |
 | Backend health | passed |
-| Price summary checked | yes |
-| Holdings summary checked | yes |
-| Portfolio summary checked | yes |
-| Price alert summary checked | yes |
-| News/GPT summary checked | yes |
-| Protected screens opened | yes |
+| KRX daily collect | passed |
+| Latest price date refresh | passed |
+| Holdings/portfolio/dashboard consistency | passed |
+| Market news collect | passed |
+| Latest news timestamp refresh | passed |
+| GPT summary execution | passed |
+| GPT filter execution | blocked by external quota |
+| Price alert dry-run | passed |
+| News alert dry-run | passed |
 | Real Gmail sent | no |
 
 ## Current validated configuration notes
 
-- Backup file created at:
-  - `backend/backups/stock_analyze_pre_operation_20260707_132844.db`
-- Current operation risk:
-  - latest price date is `2025-07-03`
-  - latest news published time is `2026-07-01 10:19:00`
-- Operation should not be treated as current-market-ready until price/news refresh is rerun
+- Current live DB status:
+  - `stock_prices = 357946`
+  - `latest_price_date = 2025-07-07`
+  - `news = 51`
+  - `latest_news_published_at = 2026-07-07 14:22:00`
+- Current GPT operation risk:
+  - summary pipeline is processable
+  - filter pipeline currently returns `OpenAI API insufficient_quota`
 
 ## Confirmation-needed items
 
@@ -64,6 +61,6 @@
 
 ## Next step suggestions
 
-- Refresh KRX prices before real operation
-- Refresh news and GPT pipeline before real operation
-- Use `docs/OPERATION_START_CHECKLIST.md` as the daily start routine
+- Restore OpenAI API quota before live reliance on GPT filter output
+- Re-run GPT filter once quota is available
+- Keep real alert sending disabled until final live-operation approval
