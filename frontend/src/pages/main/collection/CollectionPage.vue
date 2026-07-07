@@ -31,13 +31,16 @@
       <div class="panel-head">
         <div>
           <h2 class="section-title">수집 종목 관리</h2>
-          <p class="muted">KODEX 구성종목, 보유, 관심, 알림, 조건 규칙 기준으로 최종 수집 대상을 산출합니다.</p>
+          <p class="muted">KODEX 구성종목, 보유, 관심, 알림, 조건 규칙 기준으로 최종 수집 대상을 관리합니다.</p>
         </div>
-        <el-button type="primary" :loading="recalculating" @click="recalculate">재계산</el-button>
+        <div class="panel-actions">
+          <el-button plain @click="openRulesDialog">수집 조건 규칙</el-button>
+          <el-button type="primary" :loading="recalculating" @click="recalculate">재계산</el-button>
+        </div>
       </div>
 
       <div class="toolbar">
-        <el-input v-model="filters.keyword" placeholder="종목명/코드/섹터 검색" clearable @keyup.enter="loadData" />
+        <el-input v-model="filters.keyword" placeholder="종목명, 종목코드, 섹터 검색" clearable @keyup.enter="loadData" />
         <el-select v-model="filters.market" placeholder="시장" clearable>
           <el-option label="KOSPI" value="KOSPI" />
           <el-option label="KOSDAQ" value="KOSDAQ" />
@@ -57,6 +60,12 @@
         <el-button :loading="loading" @click="loadData">조회</el-button>
       </div>
 
+      <div class="rules-summary">
+        <span class="rules-summary-label">활성 규칙</span>
+        <strong>{{ enabledRuleCount }}</strong>
+        <span class="muted">총 {{ rules.length }}개</span>
+      </div>
+
       <el-alert v-if="errorMessage" :title="errorMessage" type="error" show-icon :closable="false" />
 
       <el-table v-loading="loading" :data="stocks" border>
@@ -64,7 +73,7 @@
         <el-table-column prop="stock_name" label="종목명" min-width="150" />
         <el-table-column prop="market" label="시장" width="100" />
         <el-table-column prop="sector" label="섹터" min-width="130" />
-        <el-table-column label="시총" width="120" align="right">
+        <el-table-column label="시총" min-width="120" align="right">
           <template #default="{ row }">{{ formatNumber(row.market_cap) }}</template>
         </el-table-column>
         <el-table-column label="보유/관심" width="120">
@@ -100,36 +109,84 @@
       </el-table>
     </div>
 
-    <div class="content-band rules-panel">
-      <div class="panel-head">
-        <div>
-          <h2 class="section-title">수집 조건 규칙</h2>
-          <p class="muted">활성 규칙은 재계산 시 조건 규칙 단계에서 적용됩니다.</p>
+    <el-dialog v-model="rulesDialogVisible" title="수집 조건 규칙 설정" width="960px" destroy-on-close>
+      <div class="rules-dialog">
+        <div class="rules-dialog-list">
+          <div class="rules-dialog-toolbar">
+            <span class="muted">규칙 목록</span>
+            <el-button type="primary" plain @click="startCreateRule">새 규칙</el-button>
+          </div>
+
+          <el-table :data="rules" border empty-text="등록된 규칙이 없습니다.">
+            <el-table-column prop="name" label="규칙명" min-width="180" />
+            <el-table-column prop="rule_type" label="유형" width="140" />
+            <el-table-column label="사용" width="90">
+              <template #default="{ row }">
+                <el-switch v-model="row.enabled" @change="toggleRule(row)" />
+              </template>
+            </el-table-column>
+            <el-table-column prop="priority" label="우선순위" width="100" />
+            <el-table-column label="관리" width="140">
+              <template #default="{ row }">
+                <el-button link type="primary" @click="startEditRule(row)">수정</el-button>
+                <el-button link type="danger" @click="removeRule(row)">삭제</el-button>
+              </template>
+            </el-table-column>
+          </el-table>
+        </div>
+
+        <div class="rules-dialog-form">
+          <div class="rules-form-head">
+            <h3>{{ editingRuleId ? '규칙 수정' : '규칙 등록' }}</h3>
+            <p class="muted">조건은 JSON 형식으로 입력합니다. 예: <code>{"markets":["KOSPI"]}</code></p>
+          </div>
+
+          <el-form label-position="top">
+            <el-form-item label="규칙명">
+              <el-input v-model="ruleForm.name" placeholder="예: KOSPI 대형주" />
+            </el-form-item>
+
+            <el-form-item label="유형">
+              <el-select v-model="ruleForm.rule_type" placeholder="유형 선택">
+                <el-option label="index" value="index" />
+                <el-option label="index_member" value="index_member" />
+                <el-option label="market_cap" value="market_cap" />
+                <el-option label="market" value="market" />
+                <el-option label="sector" value="sector" />
+              </el-select>
+            </el-form-item>
+
+            <el-form-item label="우선순위">
+              <el-input-number v-model="ruleForm.priority" :min="1" :max="9999" />
+            </el-form-item>
+
+            <el-form-item label="활성화">
+              <el-switch v-model="ruleForm.enabled" />
+            </el-form-item>
+
+            <el-form-item label="조건 JSON">
+              <el-input
+                v-model="ruleConditionText"
+                type="textarea"
+                :rows="10"
+                placeholder='예: {"market_cap_min":1000000000000}'
+              />
+            </el-form-item>
+          </el-form>
+
+          <div class="rules-form-actions">
+            <el-button @click="resetRuleForm">초기화</el-button>
+            <el-button type="primary" :loading="savingRule" @click="submitRule">저장</el-button>
+          </div>
         </div>
       </div>
-
-      <el-table :data="rules" border>
-        <el-table-column prop="name" label="규칙명" min-width="160" />
-        <el-table-column prop="rule_type" label="유형" width="130" />
-        <el-table-column label="사용" width="90">
-          <template #default="{ row }">
-            <el-switch v-model="row.enabled" @change="saveRule(row)" />
-          </template>
-        </el-table-column>
-        <el-table-column prop="priority" label="우선순위" width="100" />
-        <el-table-column label="조건" min-width="260">
-          <template #default="{ row }">
-            <code>{{ row.condition_json ?? {} }}</code>
-          </template>
-        </el-table-column>
-      </el-table>
-    </div>
+    </el-dialog>
   </section>
 </template>
 
 <script setup lang="ts">
-import { ElMessage } from 'element-plus'
-import { onMounted, reactive, ref, watch } from 'vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
 
 import { collectionApi } from './service/collection.api'
 import type { CollectionRule, CollectionStock, CollectionStockSummary } from './service/collection.types'
@@ -137,11 +194,15 @@ import { formatNumber } from './service/collection.utils'
 
 const loading = ref(false)
 const recalculating = ref(false)
+const savingRule = ref(false)
 const errorMessage = ref('')
 const stocks = ref<CollectionStock[]>([])
 const rules = ref<CollectionRule[]>([])
 const summary = ref<CollectionStockSummary | null>(null)
 const enabledFilter = ref('')
+const rulesDialogVisible = ref(false)
+const editingRuleId = ref<number | null>(null)
+const ruleConditionText = ref('{}')
 
 const reasons = ['manual_exclude', 'manual_include', 'holding', 'favorite', 'alert', 'index_rule', 'market_cap_rule']
 const filters = reactive({
@@ -150,6 +211,15 @@ const filters = reactive({
   priority: '',
   collect_reason: '',
 })
+
+const ruleForm = reactive({
+  name: '',
+  rule_type: 'market',
+  enabled: true,
+  priority: 100,
+})
+
+const enabledRuleCount = computed(() => rules.value.filter((rule) => rule.enabled).length)
 
 async function loadData() {
   loading.value = true
@@ -175,6 +245,35 @@ async function loadData() {
   } finally {
     loading.value = false
   }
+}
+
+function openRulesDialog() {
+  rulesDialogVisible.value = true
+  if (!editingRuleId.value) {
+    resetRuleForm()
+  }
+}
+
+function resetRuleForm() {
+  editingRuleId.value = null
+  ruleForm.name = ''
+  ruleForm.rule_type = 'market'
+  ruleForm.enabled = true
+  ruleForm.priority = 100
+  ruleConditionText.value = '{}'
+}
+
+function startCreateRule() {
+  resetRuleForm()
+}
+
+function startEditRule(row: CollectionRule) {
+  editingRuleId.value = row.id
+  ruleForm.name = row.name
+  ruleForm.rule_type = row.rule_type
+  ruleForm.enabled = row.enabled
+  ruleForm.priority = row.priority
+  ruleConditionText.value = JSON.stringify(row.condition_json ?? {}, null, 2)
 }
 
 async function saveSetting(row: CollectionStock) {
@@ -212,9 +311,66 @@ async function recalculate() {
   }
 }
 
-async function saveRule(row: CollectionRule) {
+async function toggleRule(row: CollectionRule) {
   await collectionApi.updateRule(row.id, { enabled: row.enabled })
-  ElMessage.success('규칙을 저장했습니다.')
+  ElMessage.success('규칙 상태를 변경했습니다.')
+  await loadData()
+}
+
+function parseRuleCondition() {
+  try {
+    return JSON.parse(ruleConditionText.value || '{}') as Record<string, unknown>
+  } catch {
+    throw new Error('조건 JSON 형식이 올바르지 않습니다.')
+  }
+}
+
+async function submitRule() {
+  if (!ruleForm.name.trim()) {
+    ElMessage.error('규칙명을 입력하세요.')
+    return
+  }
+
+  savingRule.value = true
+  try {
+    const payload = {
+      name: ruleForm.name.trim(),
+      rule_type: ruleForm.rule_type,
+      enabled: ruleForm.enabled,
+      priority: ruleForm.priority,
+      condition_json: parseRuleCondition(),
+    }
+
+    if (editingRuleId.value) {
+      await collectionApi.updateRule(editingRuleId.value, payload)
+      ElMessage.success('규칙을 수정했습니다.')
+    } else {
+      await collectionApi.createRule(payload)
+      ElMessage.success('규칙을 등록했습니다.')
+    }
+
+    await loadData()
+    resetRuleForm()
+  } catch (error) {
+    ElMessage.error(error instanceof Error ? error.message : '규칙 저장 중 오류가 발생했습니다.')
+  } finally {
+    savingRule.value = false
+  }
+}
+
+async function removeRule(row: CollectionRule) {
+  await ElMessageBox.confirm(`"${row.name}" 규칙을 삭제할까요?`, '규칙 삭제', {
+    confirmButtonText: '삭제',
+    cancelButtonText: '취소',
+    type: 'warning',
+  })
+
+  await collectionApi.deleteRule(row.id)
+  ElMessage.success('규칙을 삭제했습니다.')
+  if (editingRuleId.value === row.id) {
+    resetRuleForm()
+  }
+  await loadData()
 }
 
 watch(() => filters.market, loadData)
@@ -254,8 +410,7 @@ onMounted(loadData)
   font-size: 22px;
 }
 
-.collection-panel,
-.rules-panel {
+.collection-panel {
   padding: 16px;
 }
 
@@ -271,11 +426,68 @@ onMounted(loadData)
   margin: 6px 0 0;
 }
 
+.panel-actions {
+  display: flex;
+  gap: 10px;
+}
+
 .toolbar {
   display: grid;
   grid-template-columns: minmax(180px, 1fr) 130px 130px 130px 170px auto;
   gap: 10px;
   margin-bottom: 12px;
+}
+
+.rules-summary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface-muted);
+}
+
+.rules-summary-label {
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.rules-summary strong {
+  font-size: 24px;
+}
+
+.rules-dialog {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(320px, 0.95fr);
+  gap: 18px;
+}
+
+.rules-dialog-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.rules-form-head {
+  margin-bottom: 12px;
+}
+
+.rules-form-head h3 {
+  margin: 0 0 6px;
+  font-size: 18px;
+}
+
+.rules-form-head p {
+  margin: 0;
+}
+
+.rules-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
 }
 
 code {
@@ -290,13 +502,20 @@ code {
   }
 
   .panel-head,
-  .toolbar {
+  .toolbar,
+  .panel-actions,
+  .rules-dialog {
     display: block;
   }
 
-  .toolbar > * {
+  .toolbar > *,
+  .panel-actions > * {
     margin-bottom: 8px;
     width: 100%;
+  }
+
+  .rules-dialog-form {
+    margin-top: 16px;
   }
 }
 </style>
