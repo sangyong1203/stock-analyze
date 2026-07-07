@@ -20,7 +20,6 @@
     <main class="page-content">
       <header class="topbar">
         <div>
-          <p class="eyebrow">Korean Equity Analysis</p>
           <h1>{{ currentTitle }}</h1>
         </div>
         <div class="topbar-actions">
