@@ -2,122 +2,148 @@
 
 ## Work overview
 
-- Latest completed scope: `docs/CODEX_TASK_2.21.md`
-- Scope handled in this task: frontend auth state persistence, protected routes, and minimum logout flow
+- Latest completed scope: `docs/CODEX_TASK_2.22.md`
+- Scope handled in this task: final pre-operation backup and operation checklist cleanup
 - Constraint kept:
-  - existing Google OAuth flow preserved
-  - no schema change
-  - no migration
+  - no new feature
+  - no new table
+  - no new migration
   - no real Gmail sending
 
 ## Reference documents
 
-- `docs/CODEX_TASK_2.21.md`
+- `docs/CODEX_TASK_2.22.md`
 - `docs/INVESTMENT_SYSTEM_PLAN_v1.2.md`
 - `docs/MVP_DB_SCHEMA_v1.2.md`
 
 ## Completed work
 
-- Reviewed the current frontend login persistence state
-- Confirmed the pre-task state had no frontend auth persistence and no protected-route guard
-- Added localStorage-based minimum auth state persistence on frontend OAuth success
-- Added route guard logic for `/dashboard`, `/portfolio`, `/alerts`, `/news`, and `/settings`
-- Redirected unauthenticated access attempts to `/login`
-- Added minimum logout action in the main layout
-- Extended backend OAuth redirect handling so the original protected route can be restored after login
-- Revalidated auth readiness endpoint and backend redirect cookies
-- Revalidated frontend auth persistence, reload persistence, and logout route protection
-
-## Generated files
-
-- `docs/CODEX_TASK_2.21_REPORT.md`
-
-## Modified files
-
-- `backend/app/domains/auth/router.py`
-- `backend/app/domains/auth/service.py`
-- `frontend/src/layouts/MainLayout.vue`
-- `frontend/src/pages/login/LoginPage.vue`
-- `frontend/src/router/index.ts`
-- `frontend/src/router/routes.ts`
-- `frontend/src/shared/utils/auth.ts`
-- `docs/CODEX_PROGRESS.md`
-- `docs/DEVELOPMENT_REPORT.md`
-
-## Backend implementation result
-
-- Existing Google OAuth routes kept:
-  - `GET /api/auth/status`
-  - `GET /api/auth/google/login`
-  - `GET /api/auth/google/callback`
-- Added minimum `redirect` cookie handling during Google login start and callback finish
-- Callback now redirects to the requested frontend path when it is a local relative path, otherwise falls back to dashboard
-
-## Frontend implementation result
-
-- Added minimum auth persistence using `localStorage`
-- OAuth success marker `auth=success` now sets auth state and is removed from the final URL
-- Protected routes added:
+- Verified the current live DB exists and inspected major table counts
+- Created one final SQLite backup using the SQLite backup API
+- Checked price collection, holdings reflection, price alert, news, GPT, and scheduled-job summary state
+- Verified protected operation screens load:
   - `/dashboard`
   - `/portfolio`
   - `/alerts`
   - `/news`
   - `/settings`
-- Unauthenticated users are redirected to `/login?redirect=...`
-- Added logout button in main layout
-- Logout clears auth state and returns the user to `/login`
+- Created a practical operation checklist document for daily use before real operation start
+
+## Generated files
+
+- `docs/CODEX_TASK_2.22_REPORT.md`
+- `docs/OPERATION_START_CHECKLIST.md`
+- `backend/backups/stock_analyze_pre_operation_20260707_132844.db`
+
+## Modified files
+
+- `docs/CODEX_PROGRESS.md`
+- `docs/DEVELOPMENT_REPORT.md`
+
+## Backend implementation result
+
+- No backend code change
+- Existing APIs were used for operation verification:
+  - `/health`
+  - `/api/prices/summary`
+  - `/api/holdings/summary`
+  - `/api/portfolio/summary`
+  - `/api/price-alerts/summary`
+  - `/api/price-alerts/histories`
+  - `/api/news/summary`
+  - `/api/news/gpt/status`
+  - `/api/jobs/summary`
+  - `/api/settings/alert-settings`
+
+## Frontend implementation result
+
+- No frontend code change
+- Protected operation routes were verified with auth state enabled:
+  - `/dashboard`
+  - `/portfolio`
+  - `/alerts`
+  - `/news`
+  - `/settings`
 
 ## DB implementation result
 
 - No schema change
 - No new table
 - No migration
+- Live DB snapshot summary:
+  - users: `1`
+  - stocks: `2802`
+  - stock_prices: `355185`
+  - news: `18`
+  - holdings: `4`
+  - price_alerts: `7`
+  - alert_histories: `11`
+  - scheduled_jobs: `11`
 
 ## Execution method
 
 Main verification:
 
 ```text
-Frontend build
-GET /health
-GET /api/auth/status
-GET /api/auth/google/login?redirect=/portfolio
-Headless browser QA:
-- /dashboard -> /login redirect
-- /dashboard?auth=success -> /dashboard auth state save
-- reload keeps /dashboard access
-- logout clears auth state and returns /login
-- /portfolio after logout -> /login redirect
+Check backend/stock_analyze.db counts
+Create SQLite backup with sqlite3 backup API
+Call operation summary APIs
+Verify protected pages with headless browser
+Write operation checklist document
 ```
 
 ## Test result
 
-- Frontend build: passed
-- Backend health check: passed
-- `/api/auth/status`: passed
-  - `oauth_configured = true`
-  - `allowed_email_configured = true`
-- Backend login redirect cookie: passed
-  - `/api/auth/google/login?redirect=/portfolio` returned `302`
-  - `google_oauth_redirect=/portfolio` cookie set
-- Protected route redirect: passed
-  - unauthenticated `/dashboard` redirected to `/login?redirect=/dashboard`
-- OAuth success persistence: passed
-  - `/dashboard?auth=success` normalized to `/dashboard`
-  - `localStorage['stock-analyze-authenticated'] = 'true'`
-- Reload persistence: passed
-  - `/dashboard` access remained after reload
-- Logout: passed
-  - returned to `/login`
-  - auth localStorage cleared
-- Protected route after logout: passed
-  - `/portfolio` redirected to `/login?redirect=/portfolio`
+- Backend health: passed
+- Live DB file presence: passed
+- Final backup creation: passed
+  - `backend/backups/stock_analyze_pre_operation_20260707_132844.db`
+- Price summary: checked
+  - total_price_rows = `355185`
+  - latest_price_date = `2025-07-03`
+  - latest_updated_stocks_count = `2758`
+- Holdings summary: checked
+  - holding_count = `4`
+  - total_market_value = `2283500.00`
+  - total_unrealized_profit_loss = `-2824590.00`
+- Portfolio summary: checked
+  - total_cash = `0`
+  - total_asset_value = `2283500.00`
+  - holding_count = `4`
+- Price alerts summary: checked
+  - total_count = `7`
+  - enabled_count = `7`
+  - sent_count = `7`
+  - failed_count = `0`
+  - skipped_count = `2`
+- News summary: checked
+  - total_news_count = `18`
+  - gpt_summary_target_count = `2`
+  - alert_target_count = `2`
+- GPT status: checked
+  - gpt_summary_done_count = `2`
+  - gpt_filter_done_count = `1`
+  - price_impact_count = `1`
+- Job summary: checked
+  - enabled_count = `8`
+  - success_count = `5`
+  - failed_count = `0`
+  - never_run_count = `3`
+- Screen access verification: passed
+  - `/dashboard`
+  - `/portfolio`
+  - `/alerts`
+  - `/news`
+  - `/settings`
 - Real Gmail sending: not executed
 
 ## Incomplete items
 
-- This task did not add server-side session invalidation or token revocation
-- Non-protected routes remain accessible by current MVP design
+- Price data is not current for real operation start
+  - current latest price date is `2025-07-03`
+- News dataset is also stale for real operation start
+  - current latest news published time is `2026-07-01 10:19:00`
+- Daily operation should start only after price/news refresh is confirmed
 
 ## Confirmation-needed items
 
@@ -125,10 +151,11 @@ Headless browser QA:
 
 ## Next step suggestions
 
-- If a later task requires stronger auth, move from frontend-only persistence to server-issued session or JWT validation
-- If more menus should require login, extend `requiresAuth` consistently rather than adding ad hoc checks per page
+- Before real operation start, run KRX daily price refresh and confirm `latest_price_date` is updated to the current trading date
+- Run news collection and GPT processing before depending on dashboard/news alert status
+- Keep using the new operation checklist as the first routine before each trading day review
 
 ## Final completion statement
 
-CODEX_TASK_2.21 프론트 인증 상태 유지 및 보호 라우트 최소 구현 완료했습니다.
+CODEX_TASK_2.22 운영 시작 전 최종 백업 및 체크리스트 정리 완료했습니다.
 DEVELOPMENT_REPORT.md를 확인해 주세요.

@@ -2,55 +2,61 @@
 
 ## Current phase
 
-- Phase: frontend auth persistence and protected-route minimum wiring
-- Task document: `docs/CODEX_TASK_2.21.md`
-- Status: frontend auth persistence, protected routes, logout, and backend redirect handoff verified
+- Phase: pre-operation backup and operation readiness check
+- Task document: `docs/CODEX_TASK_2.22.md`
+- Status: final backup created, operation summary verified, checklist documented
 
 ## Completed major work
 
 - Reviewed:
-  - `docs/CODEX_TASK_2.21.md`
+  - `docs/CODEX_TASK_2.22.md`
   - `docs/INVESTMENT_SYSTEM_PLAN_v1.2.md`
   - `docs/MVP_DB_SCHEMA_v1.2.md`
-- Confirmed pre-task frontend state:
-  - login success opened dashboard but auth state was not persisted on frontend
-  - protected routes were not guarded
-  - logout action was not present
-- Added frontend auth utility using localStorage
-- Added router guard for minimum protected routes:
+- Verified live DB existence and current table counts
+- Created final SQLite backup:
+  - `backend/backups/stock_analyze_pre_operation_20260707_132844.db`
+- Verified operation summaries:
+  - prices
+  - holdings
+  - portfolio
+  - price alerts
+  - news
+  - GPT status
+  - job summary
+  - alert settings
+- Verified protected operation screens load:
   - `/dashboard`
   - `/portfolio`
   - `/alerts`
   - `/news`
   - `/settings`
-- Added login redirect handling through `/login?redirect=...`
-- Added logout action in `MainLayout`
-- Added backend OAuth redirect cookie support so post-login return path can be restored
-- Rebuilt frontend successfully
-- Revalidated backend auth readiness and frontend route behavior
 - Added:
-  - `docs/CODEX_TASK_2.21_REPORT.md`
+  - `docs/CODEX_TASK_2.22_REPORT.md`
+  - `docs/OPERATION_START_CHECKLIST.md`
 
 ## Verification result
 
 | Item | Result |
 |---|---|
-| Frontend build | passed |
-| `/api/auth/status` ready flags | true / true |
-| Unauthenticated `/dashboard` redirect | passed |
-| OAuth success saves auth state | passed |
-| Reload keeps dashboard access | passed |
-| Logout clears auth state | passed |
-| `/portfolio` redirect after logout | passed |
+| Live DB exists | yes |
+| Final backup created | yes |
+| Backend health | passed |
+| Price summary checked | yes |
+| Holdings summary checked | yes |
+| Portfolio summary checked | yes |
+| Price alert summary checked | yes |
+| News/GPT summary checked | yes |
+| Protected screens opened | yes |
 | Real Gmail sent | no |
 
 ## Current validated configuration notes
 
-- Frontend auth persistence key:
-  - `stock-analyze-authenticated`
-- Backend login route now accepts optional relative redirect:
-  - `/api/auth/google/login?redirect=/portfolio`
-- OAuth success redirect still uses frontend `auth=success` marker, then frontend strips it from final URL
+- Backup file created at:
+  - `backend/backups/stock_analyze_pre_operation_20260707_132844.db`
+- Current operation risk:
+  - latest price date is `2025-07-03`
+  - latest news published time is `2026-07-01 10:19:00`
+- Operation should not be treated as current-market-ready until price/news refresh is rerun
 
 ## Confirmation-needed items
 
@@ -58,4 +64,6 @@
 
 ## Next step suggestions
 
-- Upgrade to server-side auth validation only when a later task explicitly requires stronger access control
+- Refresh KRX prices before real operation
+- Refresh news and GPT pipeline before real operation
+- Use `docs/OPERATION_START_CHECKLIST.md` as the daily start routine
