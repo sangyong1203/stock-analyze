@@ -16,3 +16,6 @@ frontend/*.tsbuildinfo
 # Environment
 .env
 backend/.env
+backend_server.out.log
+backend_server.err.log
+backend_server.out.log
