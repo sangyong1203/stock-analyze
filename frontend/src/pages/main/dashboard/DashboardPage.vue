@@ -1,19 +1,5 @@
 <template>
   <section class="dashboard-page">
-    <!-- <div class="hero">
-      <div>
-        <p class="eyebrow">Dashboard</p>
-        <h1>투자 현황 요약</h1>
-        <p class="hero-copy">포트폴리오, 보유 종목, 최근 거래와 뉴스, 알림 상태를 한 화면에서 확인합니다.</p>
-      </div>
-      <div class="quick-actions">
-        <el-button @click="goTo('/trades')">거래 기록</el-button>
-        <el-button @click="goTo('/portfolio')">포트폴리오</el-button>
-        <el-button @click="goTo('/news')">뉴스</el-button>
-        <el-button @click="goTo('/alerts')">알림</el-button>
-      </div>
-    </div> -->
-
     <el-alert v-if="errorMessage" :title="errorMessage" type="error" show-icon :closable="false" />
 
     <div v-if="loading" class="loading-block">
@@ -392,6 +378,7 @@ onMounted(loadSummary)
 
 .panel {
   border: 1px solid var(--border);
+  border-radius: 16px;
   background: var(--surface);
 }
 
@@ -411,7 +398,7 @@ onMounted(loadSummary)
 .dashboard-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 16px;
+  gap: 12px;
 }
 
 .panel {
