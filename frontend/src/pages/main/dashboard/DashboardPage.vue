@@ -11,7 +11,6 @@
         <el-button @click="goTo('/portfolio')">포트폴리오</el-button>
         <el-button @click="goTo('/news')">뉴스</el-button>
         <el-button @click="goTo('/alerts')">알림</el-button>
-        <el-button @click="goTo('/charts')">차트</el-button>
       </div>
     </div>
 

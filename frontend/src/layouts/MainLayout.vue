@@ -64,7 +64,6 @@ import {
   EditPen,
   Expand,
   Fold,
-  Histogram,
   Money,
   Operation,
   Setting,
@@ -87,7 +86,6 @@ const menuItems = [
   { path: '/portfolio', label: '포트폴리오', icon: Money },
   { path: '/trades', label: '거래 기록', icon: Tickets },
   { path: '/alerts', label: '알림 관리', icon: Bell },
-  { path: '/charts', label: '차트', icon: Histogram },
   { path: '/memos', label: '메모/태그', icon: EditPen },
   { path: '/settings', label: '설정', icon: Setting },
 ]

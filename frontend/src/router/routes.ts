@@ -3,7 +3,6 @@ import type { RouteRecordRaw } from 'vue-router'
 import MainLayout from '@/layouts/MainLayout.vue'
 import LoginPage from '@/pages/login/LoginPage.vue'
 import AlertsPage from '@/pages/main/alerts/AlertsPage.vue'
-import ChartsPage from '@/pages/main/charts/ChartsPage.vue'
 import CollectionPage from '@/pages/main/collection/CollectionPage.vue'
 import DashboardPage from '@/pages/main/dashboard/DashboardPage.vue'
 import MemosPage from '@/pages/main/memos/MemosPage.vue'
@@ -37,7 +36,6 @@ export const routes: RouteRecordRaw[] = [
       },
       { path: 'trades', name: 'trades', component: TradesPage, meta: { title: '거래 기록' } },
       { path: 'alerts', name: 'alerts', component: AlertsPage, meta: { title: '알림 관리', requiresAuth: true } },
-      { path: 'charts', name: 'charts', component: ChartsPage, meta: { title: '차트' } },
       { path: 'memos', name: 'memos', component: MemosPage, meta: { title: '메모/태그' } },
       { path: 'settings', name: 'settings', component: SettingsPage, meta: { title: '설정', requiresAuth: true } },
     ],
