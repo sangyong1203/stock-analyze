@@ -566,7 +566,7 @@ onMounted(async () => {
 })
 </script>
 
-<style scoped>
+<style lang="scss" scoped>
 .collection-page {
   display: flex;
   min-height: 0;

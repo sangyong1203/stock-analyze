@@ -15,18 +15,19 @@
       </div>
 
       <div class="toolbar">
-        <el-input v-model="filters.search" placeholder="종목명 또는 코드 검색" clearable @keyup.enter="loadStocks" />
+        <el-input v-model="filters.search" placeholder="종목명 또는 코드 검색" clearable @clear="applyFilters" @keyup.enter="applyFilters" />
         <el-select v-model="filters.market" placeholder="시장" clearable>
           <el-option label="KOSPI" value="KOSPI" />
           <el-option label="KOSDAQ" value="KOSDAQ" />
         </el-select>
         <el-checkbox v-model="favoriteOnly">관심종목만</el-checkbox>
-        <el-button :loading="loading" @click="loadStocks">조회</el-button>
+        <el-button :loading="loading" @click="applyFilters">조회</el-button>
       </div>
 
       <el-alert v-if="errorMessage" :title="errorMessage" type="error" show-icon :closable="false" />
 
-      <el-table v-loading="loading" :data="stocks" border>
+      <div class="table-shell">
+        <el-table v-loading="loading" class="stocks-table" :data="pagedStocks" border height="100%">
         <el-table-column prop="code" label="코드" width="110" />
         <el-table-column prop="name" label="종목명" min-width="160" />
         <el-table-column prop="market" label="시장" width="110" />
@@ -62,7 +63,20 @@
             <el-button link type="danger" :disabled="!row.is_active" @click="deactivateStock(row)">비활성화</el-button>
           </template>
         </el-table-column>
-      </el-table>
+        </el-table>
+      </div>
+
+      <div class="table-footer">
+        <span class="muted">총 {{ totalStocks }}건 중 {{ pageStart }}-{{ pageEnd }}건 표시</span>
+        <el-pagination
+          v-model:current-page="pagination.page"
+          v-model:page-size="pagination.pageSize"
+          background
+          layout="prev, pager, next, sizes"
+          :total="totalStocks"
+          :page-sizes="[50, 100, 200]"
+        />
+      </div>
     </div>
 
     <el-dialog v-model="dialogVisible" :title="editingStock ? '종목 수정' : '종목 추가'" width="560px">
@@ -133,6 +147,10 @@ const filters = reactive({
   search: '',
   market: '',
 })
+const pagination = reactive({
+  page: 1,
+  pageSize: 50,
+})
 
 const form = reactive<StockPayload>({
   code: '',
@@ -151,6 +169,13 @@ const form = reactive<StockPayload>({
 const favoriteCount = computed(() => stocks.value.filter((stock) => stock.is_favorite).length)
 const holdingCount = computed(() => stocks.value.filter((stock) => stock.is_holding).length)
 const activeCount = computed(() => stocks.value.filter((stock) => stock.is_active).length)
+const totalStocks = computed(() => stocks.value.length)
+const pageStart = computed(() => (totalStocks.value === 0 ? 0 : (pagination.page - 1) * pagination.pageSize + 1))
+const pageEnd = computed(() => Math.min(pagination.page * pagination.pageSize, totalStocks.value))
+const pagedStocks = computed(() => {
+  const start = (pagination.page - 1) * pagination.pageSize
+  return stocks.value.slice(start, start + pagination.pageSize)
+})
 
 const kpiItems = computed(() => [
   { label: '표시 종목', value: stocks.value.length },
@@ -169,11 +194,16 @@ async function loadStocks() {
       is_favorite: favoriteOnly.value ? true : undefined,
       is_active: true,
     })
+    pagination.page = 1
   } catch (error) {
     errorMessage.value = error instanceof Error ? error.message : '종목 목록을 불러오지 못했습니다.'
   } finally {
     loading.value = false
   }
+}
+
+function applyFilters() {
+  void loadStocks()
 }
 
 function resetForm() {
@@ -276,28 +306,45 @@ watch(() => filters.market, loadStocks)
 onMounted(loadStocks)
 </script>
 
-<style scoped>
+<style lang="scss" scoped>
 .stocks-page {
   display: flex;
+  min-height: 0;
+  height: 100%;
   flex-direction: column;
   gap: 16px;
 }
 
 
 .stocks-panel {
+  display: flex;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
+  overflow: hidden;
   padding: 16px;
 }
 
 .panel-head {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: 12px;
   margin-bottom: 14px;
 }
 
+.panel-head > div:first-child {
+  display: flex;
+  gap: 14px;
+  align-items: baseline;
+  flex-wrap: wrap;
+}
+
 .panel-head p {
-  margin: 6px 0 0;
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 1.4;
 }
 
 .panel-actions {
@@ -315,6 +362,25 @@ onMounted(loadStocks)
   margin-bottom: 12px;
 }
 
+.table-shell {
+  min-height: 260px;
+  flex: 1;
+  overflow: hidden;
+}
+
+.stocks-table {
+  height: 100%;
+}
+
+.table-footer {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 14px;
+}
+
 .form-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -322,10 +388,22 @@ onMounted(loadStocks)
 }
 
 @media (max-width: 900px) {
+  .stocks-page,
+  .stocks-panel {
+    display: block;
+    height: auto;
+    overflow: visible;
+  }
+
+  .table-shell {
+    height: 520px;
+    min-height: 420px;
+  }
 
   .panel-head,
   .toolbar,
-  .form-grid {
+  .form-grid,
+  .table-footer {
     display: block;
   }
 
@@ -333,6 +411,15 @@ onMounted(loadStocks)
   .form-grid > * {
     margin-bottom: 8px;
     width: 100%;
+  }
+
+  .panel-head > div:first-child {
+    display: block;
+    margin-bottom: 8px;
+  }
+
+  .panel-head p {
+    margin-top: 6px;
   }
 }
 </style>
