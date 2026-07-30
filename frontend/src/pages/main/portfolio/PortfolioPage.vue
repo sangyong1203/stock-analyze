@@ -2,7 +2,7 @@
   <section class="portfolio-page">
     <KpiGrid :items="summaryCards" :columns="6" spaced />
 
-    <div class="content-band portfolio-layout">
+    <div class="portfolio-layout">
       <div class="side-column">
         <section class="panel-card">
           <div class="panel-head">
@@ -305,6 +305,7 @@ onMounted(loadPortfolio)
   border: 1px solid rgba(15, 23, 42, 0.08);
   border-radius: 16px;
   background: rgba(255, 255, 255, 0.82);
+  overflow: hidden;
 }
 
 .panel-head p,

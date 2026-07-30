@@ -49,6 +49,7 @@ const gridStyle = computed(() => ({
 .kpi-card {
   padding: 16px;
   border: 1px solid var(--border);
+  border-radius: 16px;
   background: var(--surface);
 }
 
