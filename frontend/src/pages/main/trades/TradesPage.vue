@@ -1,6 +1,5 @@
 <template>
   <section class="trades-page">
-    <div class="content-band">
       <div class="panel-head">
         <div>
           <h2 class="section-title">거래 기록</h2>
@@ -132,7 +131,6 @@
           </el-table>
         </div>
       </div>
-    </div>
 
     <el-drawer v-model="detailOpen" title="거래 상세 관리" size="42%">
       <div v-if="selectedTrade" class="detail-body">
