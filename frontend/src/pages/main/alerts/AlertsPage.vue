@@ -1,8 +1,8 @@
 <template>
   <section class="alerts-page">
-    <KpiGrid :items="kpiItems" :columns="4" spaced />
+    <KpiGrid :items="kpiItems" :columns="4"/>
 
-    <div class="content-band alerts-layout">
+    <div class="alerts-layout">
       <section class="panel-card">
         <div class="panel-head">
           <div>
@@ -133,16 +133,24 @@
       </section>
     </div>
 
-    <div class="content-band panel-card">
+    <el-tabs
+      v-model="activeAlertTab"
+      class="alerts-tabs"
+      @mousedown.capture="preserveContentScrollPosition"
+      @keydown.capture="preserveContentScrollPosition"
+    >
+      <el-tab-pane label="가격 알림 목록" name="alerts">
+    <div class="panel-card alerts-list-panel">
       <div class="panel-head">
-        <div>
+        <div class="panel-head-title">
           <h2 class="section-title">가격 알림 목록</h2>
           <p class="muted">목표가, 변동률, 최근 60일 기준 여부, 최근 트리거 상태를 확인합니다.</p>
         </div>
         <el-button :loading="loading" @click="loadData">새로고침</el-button>
       </div>
 
-      <el-table v-loading="loading" :data="alerts" border>
+      <div class="table-shell">
+      <el-table v-loading="loading" class="alerts-table" :data="pagedAlerts" border height="100%">
         <el-table-column prop="stock_code" label="코드" width="90" />
         <el-table-column prop="stock_name" label="종목" min-width="140" />
         <el-table-column prop="alert_type" label="조건" width="180" />
@@ -182,11 +190,26 @@
           </template>
         </el-table-column>
       </el-table>
-    </div>
+      </div>
 
-    <div class="content-band panel-card">
+      <div class="table-footer">
+        <span class="muted">총 {{ totalAlerts }}건 중 {{ alertsPageStart }}-{{ alertsPageEnd }}건 표시</span>
+        <el-pagination
+          v-model:current-page="alertsPagination.page"
+          v-model:page-size="alertsPagination.pageSize"
+          background
+          layout="prev, pager, next, sizes"
+          :total="totalAlerts"
+          :page-sizes="[50, 100, 200]"
+        />
+      </div>
+    </div>
+      </el-tab-pane>
+
+      <el-tab-pane label="발송 이력" name="histories">
+    <div class="panel-card alerts-list-panel">
       <div class="panel-head">
-        <div>
+        <div class="panel-head-title">
           <h2 class="section-title">발송 이력</h2>
           <p class="muted">sent, failed, skipped 이력을 확인합니다.</p>
         </div>
@@ -200,7 +223,8 @@
         </div>
       </div>
 
-      <el-table v-loading="loading" :data="histories" border>
+      <div class="table-shell">
+      <el-table v-loading="loading" class="alerts-table" :data="pagedHistories" border height="100%">
         <el-table-column prop="id" label="ID" width="80" />
         <el-table-column prop="price_alert_id" label="알림 ID" width="90" />
         <el-table-column prop="stock_id" label="종목 ID" width="90" />
@@ -212,13 +236,28 @@
         </el-table-column>
         <el-table-column prop="error_message" label="오류/skip" min-width="200" show-overflow-tooltip />
       </el-table>
+      </div>
+
+      <div class="table-footer">
+        <span class="muted">총 {{ totalHistories }}건 중 {{ historiesPageStart }}-{{ historiesPageEnd }}건 표시</span>
+        <el-pagination
+          v-model:current-page="historiesPagination.page"
+          v-model:page-size="historiesPagination.pageSize"
+          background
+          layout="prev, pager, next, sizes"
+          :total="totalHistories"
+          :page-sizes="[50, 100, 200]"
+        />
+      </div>
     </div>
+      </el-tab-pane>
+    </el-tabs>
   </section>
 </template>
 
 <script setup lang="ts">
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { computed, onMounted, reactive, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, reactive, ref, watch } from 'vue'
 
 import KpiGrid from '@/shared/components/KpiGrid.vue'
 
@@ -241,7 +280,9 @@ const sending = ref(false)
 const stockSearching = ref(false)
 const errorMessage = ref('')
 const statusFilter = ref('')
+const activeAlertTab = ref('alerts')
 const editingAlertId = ref<number | null>(null)
+let preservedContentScrollTop = 0
 
 const summary = ref<PriceAlertSummary | null>(null)
 const alerts = ref<PriceAlert[]>([])
@@ -262,6 +303,35 @@ const evaluationForm = reactive({
   limit: 20,
   force: false,
 })
+const alertsPagination = reactive({
+  page: 1,
+  pageSize: 50,
+})
+const historiesPagination = reactive({
+  page: 1,
+  pageSize: 50,
+})
+
+const totalAlerts = computed(() => alerts.value.length)
+const alertsPageStart = computed(() =>
+  totalAlerts.value === 0 ? 0 : (alertsPagination.page - 1) * alertsPagination.pageSize + 1,
+)
+const alertsPageEnd = computed(() => Math.min(alertsPagination.page * alertsPagination.pageSize, totalAlerts.value))
+const pagedAlerts = computed(() => {
+  const start = (alertsPagination.page - 1) * alertsPagination.pageSize
+  return alerts.value.slice(start, start + alertsPagination.pageSize)
+})
+const totalHistories = computed(() => histories.value.length)
+const historiesPageStart = computed(() =>
+  totalHistories.value === 0 ? 0 : (historiesPagination.page - 1) * historiesPagination.pageSize + 1,
+)
+const historiesPageEnd = computed(() =>
+  Math.min(historiesPagination.page * historiesPagination.pageSize, totalHistories.value),
+)
+const pagedHistories = computed(() => {
+  const start = (historiesPagination.page - 1) * historiesPagination.pageSize
+  return histories.value.slice(start, start + historiesPagination.pageSize)
+})
 
 const kpiItems = computed(() => [
   { label: '전체 알림', value: summary.value?.total_count ?? 0 },
@@ -271,6 +341,25 @@ const kpiItems = computed(() => [
 ])
 
 const isRangeAlert = computed(() => form.alert_type === 'DROP_FROM_HIGH' || form.alert_type === 'RISE_FROM_LOW')
+
+function getContentScrollElement() {
+  return document.querySelector<HTMLElement>('.content-scroll')
+}
+
+function preserveContentScrollPosition() {
+  preservedContentScrollTop = getContentScrollElement()?.scrollTop ?? 0
+}
+
+async function restoreContentScrollPosition() {
+  const targetTop = preservedContentScrollTop
+  await nextTick()
+  requestAnimationFrame(() => {
+    const scrollElement = getContentScrollElement()
+    if (scrollElement) {
+      scrollElement.scrollTop = targetTop
+    }
+  })
+}
 
 function resetForm() {
   editingAlertId.value = null
@@ -309,6 +398,8 @@ async function loadData() {
     alerts.value = alertRows
     summary.value = summaryRow
     histories.value = historyRows
+    alertsPagination.page = 1
+    historiesPagination.page = 1
   } catch (error) {
     errorMessage.value = error instanceof Error ? error.message : '가격 알림 데이터를 불러오지 못했습니다.'
   } finally {
@@ -446,6 +537,13 @@ async function runEvaluate() {
 }
 
 watch(statusFilter, loadData)
+watch(activeAlertTab, restoreContentScrollPosition)
+watch(() => alertsPagination.pageSize, () => {
+  alertsPagination.page = 1
+})
+watch(() => historiesPagination.pageSize, () => {
+  historiesPagination.page = 1
+})
 watch(
   () => form.alert_type,
   (value) => {
@@ -462,8 +560,18 @@ onMounted(loadData)
 
 <style scoped>
 .alerts-page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
+.alerts-tabs {
+  min-width: 0;
+}
+
+.alerts-tabs :deep(.el-tabs__content) {
+  overflow: visible;
+}
 
 .alerts-layout {
   display: grid;
@@ -489,6 +597,44 @@ onMounted(loadData)
 
 .panel-head p {
   margin: 6px 0 0;
+}
+
+.panel-head-title {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+
+.panel-head-title p {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.alerts-list-panel {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.table-shell {
+  height: 520px;
+  min-height: 420px;
+  overflow: hidden;
+}
+
+.alerts-table {
+  height: 100%;
+}
+
+.table-footer {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 14px;
 }
 
 .field-grid {
@@ -553,14 +699,28 @@ onMounted(loadData)
     grid-template-columns: 1fr;
   }
 
+  .table-shell {
+    height: 520px;
+    min-height: 420px;
+  }
+
   .panel-head,
   .actions {
     display: block;
   }
 
+  .panel-head-title {
+    display: block;
+    margin-bottom: 8px;
+  }
+
   .actions > * {
     width: 100%;
     margin-bottom: 8px;
+  }
+
+  .table-footer {
+    display: block;
   }
 }
 </style>
