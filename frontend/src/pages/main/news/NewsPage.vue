@@ -4,7 +4,7 @@
 
     <div class="content-band news-panel">
       <div class="panel-head">
-        <div>
+        <div class="panel-head-title">
           <h2 class="section-title">뉴스 수집/조회</h2>
           <p class="muted">네이버 금융 시장 뉴스를 수집하고 수집 대상 종목과 매칭된 결과를 확인합니다.</p>
         </div>
@@ -73,7 +73,8 @@
         :closable="false"
       />
 
-      <el-table v-loading="loading" :data="newsRows" border @row-click="openDetail">
+      <div class="table-shell">
+        <el-table v-loading="loading" class="news-table" :data="pagedNewsRows" border height="100%" @row-click="openDetail">
         <el-table-column label="발행시각" width="150">
           <template #default="{ row }">{{ formatDateTime(row.published_at) }}</template>
         </el-table-column>
@@ -103,7 +104,20 @@
         </el-table-column>
         <el-table-column prop="gpt_summary_status" label="GPT 요약" width="110" />
         <el-table-column prop="gpt_filter_result" label="GPT 필터" width="120" />
-      </el-table>
+        </el-table>
+      </div>
+
+      <div class="table-footer">
+        <span class="muted">총 {{ totalNewsRows }}건 중 {{ pageStart }}-{{ pageEnd }}건 표시</span>
+        <el-pagination
+          v-model:current-page="pagination.page"
+          v-model:page-size="pagination.pageSize"
+          background
+          layout="prev, pager, next, sizes"
+          :total="totalNewsRows"
+          :page-sizes="[50, 100, 200]"
+        />
+      </div>
     </div>
 
     <div class="content-band review-panel">
@@ -380,6 +394,10 @@ const filters = reactive({
   gpt_summary_status: '',
   gpt_filter_result: '',
 })
+const pagination = reactive({
+  page: 1,
+  pageSize: 50,
+})
 
 const collectForm = reactive({
   pages: 1,
@@ -395,6 +413,14 @@ const reviewForm = reactive({
   gpt_filter_reason: '',
   is_alert_target: false,
   filter_status: '',
+})
+
+const totalNewsRows = computed(() => newsRows.value.length)
+const pageStart = computed(() => (totalNewsRows.value === 0 ? 0 : (pagination.page - 1) * pagination.pageSize + 1))
+const pageEnd = computed(() => Math.min(pagination.page * pagination.pageSize, totalNewsRows.value))
+const pagedNewsRows = computed(() => {
+  const start = (pagination.page - 1) * pagination.pageSize
+  return newsRows.value.slice(start, start + pagination.pageSize)
 })
 
 const kpiItems = computed(() => [
@@ -445,6 +471,7 @@ async function loadData() {
       newsApi.alertCandidates(reviewFilters),
     ])
     newsRows.value = rows
+    pagination.page = 1
     summary.value = summaryData
     lastJob.value = jobs[0] ?? null
     gptTargets.value = targets
@@ -678,19 +705,29 @@ watch(() => filters.gpt_filter_result, loadData)
 watch(importanceFilter, loadData)
 watch(publishedRange, loadData)
 watch(gptTargetFilter, loadData)
+watch(() => pagination.pageSize, () => {
+  pagination.page = 1
+})
 
 onMounted(loadData)
 </script>
 
-<style scoped>
+<style lang="scss" scoped>
 .news-page {
   display: flex;
+  min-height: 0;
+  height: 100%;
   flex-direction: column;
   gap: 16px;
 }
 
 
 .news-panel {
+  display: flex;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
+  overflow: hidden;
   padding: 16px;
 }
 
@@ -700,14 +737,24 @@ onMounted(loadData)
 
 .panel-head {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: 12px;
   margin-bottom: 14px;
 }
 
+.panel-head-title {
+  display: flex;
+  gap: 14px;
+  align-items: baseline;
+  flex-wrap: wrap;
+}
+
 .panel-head p {
-  margin: 6px 0 0;
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 1.4;
 }
 
 .collect-actions {
@@ -732,6 +779,25 @@ onMounted(loadData)
 
 .job-alert {
   margin: 12px 0;
+}
+
+.table-shell {
+  min-height: 260px;
+  flex: 1;
+  overflow: hidden;
+}
+
+.news-table {
+  height: 100%;
+}
+
+.table-footer {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 14px;
 }
 
 .stock-tag {
@@ -788,6 +854,17 @@ onMounted(loadData)
 }
 
 @media (max-width: 1100px) {
+  .news-page,
+  .news-panel {
+    display: block;
+    height: auto;
+    overflow: visible;
+  }
+
+  .table-shell {
+    height: 520px;
+    min-height: 420px;
+  }
 
   .panel-head,
   .toolbar,
@@ -801,6 +878,19 @@ onMounted(loadData)
   .gpt-actions > * {
     margin-bottom: 8px;
     width: 100%;
+  }
+
+  .panel-head-title {
+    display: block;
+    margin-bottom: 8px;
+  }
+
+  .panel-head p {
+    margin-top: 6px;
+  }
+
+  .table-footer {
+    display: block;
   }
 }
 </style>
