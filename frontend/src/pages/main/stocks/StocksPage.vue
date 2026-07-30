@@ -278,6 +278,9 @@ onMounted(loadStocks)
 
 <style scoped>
 .stocks-page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
 

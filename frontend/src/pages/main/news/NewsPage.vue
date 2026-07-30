@@ -684,6 +684,9 @@ onMounted(loadData)
 
 <style scoped>
 .news-page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
 

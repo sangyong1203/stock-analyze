@@ -572,6 +572,7 @@ onMounted(async () => {
   min-height: 0;
   height: 100%;
   flex-direction: column;
+  gap: 16px;
 }
 
 

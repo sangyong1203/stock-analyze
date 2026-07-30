@@ -1,5 +1,5 @@
 <template>
-  <section>
+  <section class="page-scaffold">
     <KpiGrid :items="metrics" :columns="4" />
 
     <div class="content-band toolbar">
@@ -58,6 +58,12 @@ const rows = [
 </script>
 
 <style scoped>
+.page-scaffold {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
 .toolbar {
   display: grid;
   grid-template-columns: minmax(160px, 1fr) 160px auto;

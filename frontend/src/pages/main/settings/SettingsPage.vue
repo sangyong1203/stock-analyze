@@ -324,6 +324,9 @@ onMounted(loadSettings)
 
 <style scoped>
 .settings-page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
 
