@@ -277,6 +277,9 @@ onMounted(loadPortfolio)
 
 <style scoped>
 .portfolio-page {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
 }
 
 
