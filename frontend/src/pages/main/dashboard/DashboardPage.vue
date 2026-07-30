@@ -1,6 +1,6 @@
 <template>
   <section class="dashboard-page">
-    <div class="hero">
+    <!-- <div class="hero">
       <div>
         <p class="eyebrow">Dashboard</p>
         <h1>투자 현황 요약</h1>
@@ -12,7 +12,7 @@
         <el-button @click="goTo('/news')">뉴스</el-button>
         <el-button @click="goTo('/alerts')">알림</el-button>
       </div>
-    </div>
+    </div> -->
 
     <el-alert v-if="errorMessage" :title="errorMessage" type="error" show-icon :closable="false" />
 
@@ -24,7 +24,7 @@
       <KpiGrid :items="kpiItems" :columns="6" />
 
       <div class="dashboard-grid">
-        <section class="panel">
+        <section class="panel dashboard-card jobs-card">
           <div class="panel-head">
             <div>
               <h2>작업 상태</h2>
@@ -51,7 +51,7 @@
           </ul>
         </section>
 
-        <section class="panel span-2">
+        <section class="panel dashboard-card portfolio-card">
           <div class="panel-head">
             <div>
               <h2>포트폴리오 요약</h2>
@@ -82,7 +82,7 @@
           </div>
         </section>
 
-        <section class="panel">
+        <section class="panel dashboard-card alerts-card">
           <div class="panel-head">
             <div>
               <h2>알림 요약</h2>
@@ -109,7 +109,7 @@
           </ul>
         </section>
 
-        <section class="panel">
+        <section class="panel dashboard-card memo-tags-card">
           <div class="panel-head">
             <div>
               <h2>메모 / 태그</h2>
@@ -124,7 +124,7 @@
           </div>
         </section>
 
-        <section class="panel">
+        <section class="panel dashboard-card holdings-card">
           <div class="panel-head">
             <div>
               <h2>보유 종목 TOP 5</h2>
@@ -147,7 +147,7 @@
           </el-table>
         </section>
 
-        <section class="panel">
+        <section class="panel dashboard-card returns-card">
           <div class="panel-head">
             <div>
               <h2>수익률 TOP / 하위</h2>
@@ -176,7 +176,7 @@
           </div>
         </section>
 
-        <section class="panel span-2">
+        <section class="panel span-2 dashboard-card trades-card">
           <div class="panel-head">
             <div>
               <h2>최근 거래</h2>
@@ -203,7 +203,7 @@
           </el-table>
         </section>
 
-        <section class="panel span-2">
+        <section class="panel dashboard-card news-card">
           <div class="panel-head">
             <div>
               <h2>최근 뉴스</h2>
@@ -228,7 +228,7 @@
           </el-table>
         </section>
 
-        <section class="panel">
+        <section class="panel dashboard-card alert-history-card">
           <div class="panel-head">
             <div>
               <h2>최근 알림 이력</h2>
@@ -246,7 +246,7 @@
           </ul>
         </section>
 
-        <section class="panel">
+        <section class="panel dashboard-card recent-memos-card">
           <div class="panel-head">
             <div>
               <h2>최근 메모</h2>
@@ -420,6 +420,46 @@ onMounted(loadSummary)
 
 .span-2 {
   grid-column: span 2;
+}
+
+.portfolio-card {
+  order: 1;
+}
+
+.holdings-card {
+  order: 2;
+}
+
+.news-card {
+  order: 4;
+}
+
+.returns-card {
+  order: 3;
+}
+
+.trades-card {
+  order: 5;
+}
+
+.alerts-card {
+  order: 6;
+}
+
+.alert-history-card {
+  order: 7;
+}
+
+.memo-tags-card {
+  order: 8;
+}
+
+.recent-memos-card {
+  order: 9;
+}
+
+.jobs-card {
+  order: 10;
 }
 
 .panel-head {
