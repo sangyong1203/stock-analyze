@@ -14,6 +14,7 @@
           circle
           plain
           :icon="isMenuCollapsed ? Expand : Fold"
+          :aria-label="isMenuCollapsed ? '메뉴 펼치기' : '메뉴 접기'"
           @click="toggleMenu"
         />
       </div>

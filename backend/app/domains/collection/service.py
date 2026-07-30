@@ -247,11 +247,11 @@ def update_collection_stock(db: Session, stock_id: int, payload: CollectionStock
 
 
 def get_collection_stock_detail(db: Session, stock_id: int):
-    rows = repository.list_collection_stocks(db, keyword=None)
-    for stock, setting, is_holding in rows:
-        if stock.id == stock_id:
-            return _setting_or_default(stock, setting, is_holding)
-    raise HTTPException(status_code=404, detail="stock not found")
+    row = repository.get_collection_stock(db, stock_id)
+    if row is None:
+        raise HTTPException(status_code=404, detail="stock not found")
+    stock, setting, is_holding = row
+    return _setting_or_default(stock, setting, is_holding)
 
 
 def include_collection_stock(db: Session, stock_id: int):

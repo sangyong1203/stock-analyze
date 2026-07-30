@@ -27,6 +27,20 @@ def get_stock_collection_setting(db: Session, stock_id: int):
     return db.query(StockCollectionSetting).filter(StockCollectionSetting.stock_id == stock_id).first()
 
 
+def get_collection_stock(db: Session, stock_id: int):
+    holding_exists = exists().where(
+        Holding.stock_id == Stock.id,
+        Holding.is_closed.is_(False),
+        Holding.quantity > 0,
+    )
+    return (
+        db.query(Stock, StockCollectionSetting, holding_exists.label("is_holding_calculated"))
+        .outerjoin(StockCollectionSetting, StockCollectionSetting.stock_id == Stock.id)
+        .filter(Stock.id == stock_id, Stock.is_active.is_(True))
+        .first()
+    )
+
+
 def list_active_stocks(db: Session):
     return db.query(Stock).filter(Stock.is_active.is_(True)).order_by(Stock.code).all()
 

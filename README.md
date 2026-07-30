@@ -12,6 +12,7 @@
 
 ```bash
 cd backend
+.\.venv\Scripts\activate
 python -m pip install -r requirements.txt
 python -m alembic upgrade head
 python seeds/seed_defaults.py
@@ -27,7 +28,7 @@ http://127.0.0.1:8000/health
 정상 응답:
 
 ```json
-{"status":"ok"}
+{ "status": "ok" }
 ```
 
 ## 2. Frontend 실행

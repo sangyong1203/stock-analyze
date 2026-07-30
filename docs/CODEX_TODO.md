@@ -116,3 +116,18 @@
 - [x] CODEX_PROGRESS.md 갱신
 - [x] DEVELOPMENT_REPORT.md 작성
 - [x] 완료/미완료/확인 필요 항목 정리
+
+## 12. Playwright 테스트 DB 통합 테스트
+
+- [x] Playwright 및 Chromium 설치
+- [x] 운영 DB와 분리된 E2E SQLite DB 구성
+- [x] E2E DB Alembic migration 및 기본 seed 자동화
+- [x] 1단계 인증 및 공통 레이아웃 테스트
+- [x] 2단계 대시보드 테스트
+- [x] 3단계 종목 / 수집 종목 테스트
+- [ ] 4단계 뉴스 테스트 (GPT 기능 제외)
+- [ ] 5단계 포트폴리오 / 거래 테스트
+- [ ] 6단계 알림 테스트 (실제 Gmail 발송 제외)
+- [ ] 7단계 차트 테스트
+- [ ] 8단계 메모 / 설정 테스트 (GPT 기능 제외)
+- [x] 1단계 실행 결과 및 보고서 작성
