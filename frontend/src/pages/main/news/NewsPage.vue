@@ -127,12 +127,13 @@
       <el-tab-pane label="GPT 검수 목록" name="review">
         <div class="content-band review-panel">
           <div class="panel-head">
-            <div>
+            <div class="panel-head-title">
               <h2 class="section-title">GPT 검수 목록</h2>
           <p class="muted">현재 필터 기준으로 GPT 결과와 알림 후보를 빠르게 검수합니다.</p>
         </div>
       </div>
-      <el-table :data="reviewRows" border>
+      <div class="table-shell">
+      <el-table v-loading="loading" class="news-table" :data="pagedReviewRows" border height="100%">
         <el-table-column label="발행시각" width="150">
           <template #default="{ row }">{{ formatDateTime(row.published_at) }}</template>
         </el-table-column>
@@ -155,6 +156,19 @@
           </template>
         </el-table-column>
       </el-table>
+      </div>
+
+      <div class="table-footer">
+        <span class="muted">총 {{ totalReviewRows }}건 중 {{ reviewPageStart }}-{{ reviewPageEnd }}건 표시</span>
+        <el-pagination
+          v-model:current-page="reviewPagination.page"
+          v-model:page-size="reviewPagination.pageSize"
+          background
+          layout="prev, pager, next, sizes"
+          :total="totalReviewRows"
+          :page-sizes="[50, 100, 200]"
+        />
+      </div>
     </div>
 
       </el-tab-pane>
@@ -162,12 +176,13 @@
       <el-tab-pane label="알림 후보" name="alerts">
         <div class="content-band review-panel">
           <div class="panel-head">
-            <div>
+            <div class="panel-head-title">
               <h2 class="section-title">알림 후보</h2>
           <p class="muted">현재 필터 기준으로 이메일 발송 전 단계의 뉴스 알림 후보를 확인합니다.</p>
         </div>
       </div>
-      <el-table :data="alertRows" border>
+      <div class="table-shell">
+      <el-table v-loading="loading" class="news-table" :data="pagedAlertRows" border height="100%">
         <el-table-column label="발행시각" width="150">
           <template #default="{ row }">{{ formatDateTime(row.published_at) }}</template>
         </el-table-column>
@@ -185,6 +200,19 @@
           </template>
         </el-table-column>
       </el-table>
+      </div>
+
+      <div class="table-footer">
+        <span class="muted">총 {{ totalAlertRows }}건 중 {{ alertPageStart }}-{{ alertPageEnd }}건 표시</span>
+        <el-pagination
+          v-model:current-page="alertPagination.page"
+          v-model:page-size="alertPagination.pageSize"
+          background
+          layout="prev, pager, next, sizes"
+          :total="totalAlertRows"
+          :page-sizes="[50, 100, 200]"
+        />
+      </div>
     </div>
 
       </el-tab-pane>
@@ -410,6 +438,14 @@ const pagination = reactive({
   page: 1,
   pageSize: 50,
 })
+const reviewPagination = reactive({
+  page: 1,
+  pageSize: 50,
+})
+const alertPagination = reactive({
+  page: 1,
+  pageSize: 50,
+})
 
 const collectForm = reactive({
   pages: 1,
@@ -433,6 +469,24 @@ const pageEnd = computed(() => Math.min(pagination.page * pagination.pageSize, t
 const pagedNewsRows = computed(() => {
   const start = (pagination.page - 1) * pagination.pageSize
   return newsRows.value.slice(start, start + pagination.pageSize)
+})
+const totalReviewRows = computed(() => reviewRows.value.length)
+const reviewPageStart = computed(() =>
+  totalReviewRows.value === 0 ? 0 : (reviewPagination.page - 1) * reviewPagination.pageSize + 1,
+)
+const reviewPageEnd = computed(() => Math.min(reviewPagination.page * reviewPagination.pageSize, totalReviewRows.value))
+const pagedReviewRows = computed(() => {
+  const start = (reviewPagination.page - 1) * reviewPagination.pageSize
+  return reviewRows.value.slice(start, start + reviewPagination.pageSize)
+})
+const totalAlertRows = computed(() => alertRows.value.length)
+const alertPageStart = computed(() =>
+  totalAlertRows.value === 0 ? 0 : (alertPagination.page - 1) * alertPagination.pageSize + 1,
+)
+const alertPageEnd = computed(() => Math.min(alertPagination.page * alertPagination.pageSize, totalAlertRows.value))
+const pagedAlertRows = computed(() => {
+  const start = (alertPagination.page - 1) * alertPagination.pageSize
+  return alertRows.value.slice(start, start + alertPagination.pageSize)
 })
 
 const kpiItems = computed(() => [
@@ -478,6 +532,8 @@ async function loadData() {
     ])
     newsRows.value = rows
     pagination.page = 1
+    reviewPagination.page = 1
+    alertPagination.page = 1
     summary.value = summaryData
     lastJob.value = jobs[0] ?? null
     gptTargets.value = targets
@@ -714,6 +770,12 @@ watch(gptTargetFilter, loadData)
 watch(() => pagination.pageSize, () => {
   pagination.page = 1
 })
+watch(() => reviewPagination.pageSize, () => {
+  reviewPagination.page = 1
+})
+watch(() => alertPagination.pageSize, () => {
+  alertPagination.page = 1
+})
 
 onMounted(loadData)
 </script>
@@ -749,7 +811,7 @@ onMounted(loadData)
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  margin-bottom: 14px;
+  margin-bottom: 12px;
 }
 
 .panel-head-title {
@@ -770,20 +832,64 @@ onMounted(loadData)
   display: flex;
   align-items: center;
   gap: 8px;
+  flex: 0 0 auto;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .gpt-actions {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 8px;
-  margin-bottom: 12px;
+  margin-bottom: 14px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface-muted);
+}
+
+.gpt-actions > .muted {
+  flex: 0 0 auto;
+  margin-right: 8px;
+  font-weight: 700;
 }
 
 .toolbar {
-  display: grid;
-  grid-template-columns: minmax(180px, 1fr) 120px 110px 120px 120px 130px minmax(260px, 1.2fr) auto;
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
   gap: 10px;
-  margin-bottom: 12px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: #f5f7f4;
+}
+
+.toolbar > :deep(.el-input:first-child) {
+  flex: 1 1 260px;
+  min-width: 180px;
+}
+
+.toolbar > :deep(.el-input:nth-child(2)) {
+  flex: 0 0 120px;
+}
+
+.toolbar > :deep(.el-select) {
+  flex: 0 0 118px;
+}
+
+.toolbar > :deep(.el-input-number) {
+  flex: 0 0 138px;
+}
+
+.toolbar > :deep(.el-date-editor) {
+  flex: 1 1 300px;
+  min-width: 260px;
+}
+
+.toolbar > :deep(.el-button) {
+  flex: 0 0 88px;
 }
 
 .job-alert {
@@ -791,7 +897,7 @@ onMounted(loadData)
 }
 
 .table-shell {
-  height: 520px;
+  height: 100%;
   min-height: 420px;
   overflow: hidden;
 }
@@ -887,6 +993,11 @@ onMounted(loadData)
   .gpt-actions > * {
     margin-bottom: 8px;
     width: 100%;
+  }
+
+  .gpt-actions > .muted {
+    display: block;
+    margin: 0 0 8px;
   }
 
   .panel-head-title {
