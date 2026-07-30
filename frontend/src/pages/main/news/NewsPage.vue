@@ -1,8 +1,10 @@
 <template>
   <section class="news-page">
-    <KpiGrid :items="kpiItems" :columns="6" />
+    <KpiGrid :items="kpiItems" :columns="4" />
 
-    <div class="content-band news-panel">
+    <el-tabs v-model="activeNewsTab" class="news-tabs">
+      <el-tab-pane label="뉴스 수집/조회" name="news">
+        <div class="content-band news-panel">
       <div class="panel-head">
         <div class="panel-head-title">
           <h2 class="section-title">뉴스 수집/조회</h2>
@@ -120,10 +122,13 @@
       </div>
     </div>
 
-    <div class="content-band review-panel">
-      <div class="panel-head">
-        <div>
-          <h2 class="section-title">GPT 검수 목록</h2>
+      </el-tab-pane>
+
+      <el-tab-pane label="GPT 검수 목록" name="review">
+        <div class="content-band review-panel">
+          <div class="panel-head">
+            <div>
+              <h2 class="section-title">GPT 검수 목록</h2>
           <p class="muted">현재 필터 기준으로 GPT 결과와 알림 후보를 빠르게 검수합니다.</p>
         </div>
       </div>
@@ -152,10 +157,13 @@
       </el-table>
     </div>
 
-    <div class="content-band review-panel">
-      <div class="panel-head">
-        <div>
-          <h2 class="section-title">알림 후보</h2>
+      </el-tab-pane>
+
+      <el-tab-pane label="알림 후보" name="alerts">
+        <div class="content-band review-panel">
+          <div class="panel-head">
+            <div>
+              <h2 class="section-title">알림 후보</h2>
           <p class="muted">현재 필터 기준으로 이메일 발송 전 단계의 뉴스 알림 후보를 확인합니다.</p>
         </div>
       </div>
@@ -178,6 +186,9 @@
         </el-table-column>
       </el-table>
     </div>
+
+      </el-tab-pane>
+    </el-tabs>
 
     <el-drawer v-model="detailOpen" title="뉴스 상세" size="42%">
       <div v-if="selectedNews" class="detail-body">
@@ -352,6 +363,7 @@ import { formatDateTime, formatNumber, importanceTagType } from './service/news.
 
 const loading = ref(false)
 const collecting = ref(false)
+const activeNewsTab = ref('news')
 const errorMessage = ref('')
 const newsRows = ref<News[]>([])
 const summary = ref<NewsSummary | null>(null)
@@ -424,16 +436,10 @@ const pagedNewsRows = computed(() => {
 })
 
 const kpiItems = computed(() => [
-  { label: '전체 뉴스', value: formatNumber(summary.value?.total_news_count) },
   { label: '오늘 수집', value: formatNumber(summary.value?.today_news_count) },
-  { label: '종목 연결', value: formatNumber(summary.value?.linked_stock_news_count) },
   { label: '요약 대상', value: formatNumber(summary.value?.gpt_summary_target_count) },
   { label: '알림 후보', value: formatNumber(summary.value?.alert_target_count) },
   { label: '평균 중요도', value: summary.value?.avg_importance_score ?? 0 },
-  { label: '요약 완료', value: formatNumber(gptStatus.value?.gpt_summary_done_count), cardClass: 'gpt-kpi' },
-  { label: '필터 완료', value: formatNumber(gptStatus.value?.gpt_filter_done_count), cardClass: 'gpt-kpi' },
-  { label: '중요/영향', value: formatNumber((gptStatus.value?.important_count ?? 0) + (gptStatus.value?.price_impact_count ?? 0)), cardClass: 'gpt-kpi' },
-  { label: '알림 후보', value: formatNumber(alertSummary.value?.alert_target_count), cardClass: 'alert-kpi' },
 ])
 
 async function loadData() {
@@ -715,19 +721,22 @@ onMounted(loadData)
 <style lang="scss" scoped>
 .news-page {
   display: flex;
-  min-height: 0;
-  height: 100%;
   flex-direction: column;
   gap: 16px;
 }
 
 
+.news-tabs {
+  min-width: 0;
+}
+
+.news-tabs :deep(.el-tabs__content) {
+  overflow: visible;
+}
+
 .news-panel {
   display: flex;
-  min-height: 0;
-  flex: 1;
   flex-direction: column;
-  overflow: hidden;
   padding: 16px;
 }
 
@@ -782,8 +791,8 @@ onMounted(loadData)
 }
 
 .table-shell {
-  min-height: 260px;
-  flex: 1;
+  height: 520px;
+  min-height: 420px;
   overflow: hidden;
 }
 
